@@ -1,0 +1,1 @@
+g++ main.cpp lodepng/lodepng.cpp -I. -I./lodepng -I./glm -o main
