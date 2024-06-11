@@ -53,6 +53,19 @@ public:
 
                 pixel /= samples;
 
+                // linear to gamma
+                // pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
+                // pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
+                // pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
+
+                // clamp
+                pixel.x = pixel.x < 0.0f ? 0.0f : pixel.x;
+                pixel.x = pixel.x > 1.0f ? 1.0f : pixel.x;
+                pixel.y = pixel.y < 0.0f ? 0.0f : pixel.y;
+                pixel.y = pixel.y > 1.0f ? 1.0f : pixel.y;
+                pixel.z = pixel.z < 0.0f ? 0.0f : pixel.z;
+                pixel.z = pixel.z > 1.0f ? 1.0f : pixel.z;
+
                 uint8_t ir = static_cast<uint8_t>(255.999 * pixel.x);
                 uint8_t ig = static_cast<uint8_t>(255.999 * pixel.y);
                 uint8_t ib = static_cast<uint8_t>(255.999 * pixel.z);
@@ -84,11 +97,10 @@ public:
         Hit hit = world.hit(r, 0.001, 1000.0);
 
         if (hit.is_hit) {
-            return 0.5f * get_color(Ray(hit.point, hit.direction), world, depth-1);
+            return 0.9f * get_color(Ray(hit.point, hit.direction), world, depth-1);
         }
 
         // background
-        float alpha = 0.5f * (r.direction().y + 1.0);
-        return (1.0f - alpha) * glm::vec3(1.0, 1.0, 1.0) + alpha * glm::vec3(0.4, 0.56, 1.0);
+        return glm::vec3(1.0, 1.0, 1.0);
     }
 };
