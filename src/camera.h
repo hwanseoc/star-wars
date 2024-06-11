@@ -38,17 +38,6 @@ public:
                     - dv * (heightf / 2.0f);
     }
 
-    Ray get_ray(int32_t h, int32_t w) {
-        // float random_h = std::rand() / (RAND_MAX + 1.0f) - 0.5f;
-        // float random_w = std::rand() / (RAND_MAX + 1.0f) - 0.5f;
-        float random_h = h + random_float();
-        float random_w = w + random_float();
-        glm::vec3 direction = glm::normalize(
-            pixel00 + dv * random_h + du * random_w - center
-        );
-        return Ray(center, direction);
-    }
-
     void render(std::vector<uint8_t> &image, const ObjectList& world) {
         for (int32_t h = 0; h < height; ++h) {
             for (int32_t w = 0; w < width; ++w) {
@@ -74,6 +63,17 @@ public:
                 image[h * width * 4 + w * 4 + 3] = 255;
             }
         }
+    }
+
+    Ray get_ray(int32_t h, int32_t w) {
+        // float random_h = std::rand() / (RAND_MAX + 1.0f) - 0.5f;
+        // float random_w = std::rand() / (RAND_MAX + 1.0f) - 0.5f;
+        float random_h = h + random_float();
+        float random_w = w + random_float();
+        glm::vec3 direction = glm::normalize(
+            pixel00 + dv * random_h + du * random_w - center
+        );
+        return Ray(center, direction);
     }
 
     glm::vec3 get_color(const Ray &r, const ObjectList &world, int32_t depth) const {
