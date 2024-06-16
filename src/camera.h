@@ -45,13 +45,21 @@ public:
 
                 glm::vec3 pixel(0.0, 0.0, 0.0);
 
-                for (int32_t s = 0; s < samples; ++s) {
-                    Ray r = this->get_ray(h, w);
-                    glm::vec3 sampled = get_color(r, world, 50);
-                    pixel += sampled;
-                }
+                // if (h >= 20 && h < 50 && w >= 200 && w < 210) {
+                // if (h == 25 && w == 200) {
+                if (true) {
+                    for (int32_t s = 0; s < samples; ++s) {
+                        Ray r = this->get_ray(h, w);
+                        glm::vec3 sampled = get_color(r, world, 50);
+                        pixel += sampled;
+                    }
 
-                pixel /= samples;
+                    pixel /= samples;
+                } else {
+                    pixel.x = 0.0;
+                    pixel.y = 1.0;
+                    pixel.z = 0.0;
+                }
 
                 // linear to gamma
                 // pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
@@ -76,6 +84,8 @@ public:
                 image[h * width * 4 + w * 4 + 3] = 255;
             }
         }
+
+        std::cout << std::endl;
     }
 
     Ray get_ray(int32_t h, int32_t w) {
@@ -97,10 +107,14 @@ public:
         Hit hit = world.hit(r, 0.001, 1000.0);
 
         if (hit.is_hit) {
-            return 0.9f * get_color(Ray(hit.point, hit.direction), world, depth-1);
+            return 0.5f * get_color(Ray(hit.point, hit.direction), world, depth-1);
         }
 
         // background
-        return glm::vec3(1.0, 1.0, 1.0);
+        //return glm::vec3(1.0, 1.0, 1.0);
+
+        float alpha = 0.5 * (r.direction().y + 1.0);
+        return (1.0f - alpha) * glm::vec3(1.0, 1.0, 1.0) + alpha * glm::vec3(0.5, 0.7, 1.0);
+        // return glm::vec3(0.5, 0.7, 1.0);
     }
 };

@@ -18,7 +18,7 @@ public:
 
     void set_face_normal(const Ray &r, const glm::vec3 &outward_normal) {
         is_front = glm::dot(r.direction(), outward_normal) < 0.0;
-        normal = is_front ? normal : -normal;
+        normal = is_front ? outward_normal : -outward_normal;
     }
 };
 

@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     glm::vec3 center(0.0, 0.0, 0.0);
     glm::vec3 direction(0.0, 0.0, -1.0);
     glm::vec3 up(0.0, 1.0, 0.0);
-    float fov = 103.0f / 360.0f * 2.0f * M_PI;
+    float fov = 121.28f / 360.0f * 2.0f * M_PI;
     int32_t samples = 100;
     int32_t max_depth = 50;
     PerspectiveCamera perspectiveCamera(center, direction, up, height, width, fov, samples, max_depth);

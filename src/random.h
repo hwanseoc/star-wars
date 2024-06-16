@@ -9,7 +9,7 @@ inline float random_float() {
 }
 
 inline glm::vec3 random_sphere() {
-    return glm::ballRand(1.0f);
+    return glm::sphericalRand(1.0f);
 }
 
 inline glm::vec3 random_hemisphere(const glm::vec3& normal) {

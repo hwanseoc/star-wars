@@ -41,8 +41,7 @@ public:
         ret.is_hit = true;
         ret.t = t;
         ret.point = r.at(ret.t);
-        glm::vec3 outward_normal = glm::normalize((ret.point - origin_) / radius_);
-        ret.set_face_normal(r, outward_normal);
+        ret.set_face_normal(r, glm::normalize((ret.point - origin_) / radius_));
         ret.direction = random_hemisphere(ret.normal);
         ret.color = color_;
         return ret;
