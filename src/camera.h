@@ -62,9 +62,9 @@ public:
                 }
 
                 // linear to gamma
-                // pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
-                // pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
-                // pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
+                pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
+                pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
+                pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
 
                 // clamp
                 pixel.x = pixel.x < 0.0f ? 0.0f : pixel.x;

@@ -29,12 +29,12 @@ int main(int argc, char *argv[]) {
     PerspectiveCamera perspectiveCamera(center, direction, up, height, width, fov, samples, max_depth);
 
     // objects
-    glm::vec3 red(1.0, 0.0, 0.0);
-    glm::vec3 green(0.0, 1.0, 0.0);
-    glm::vec3 blue(0.0, 0.0, 1.0);
+    // glm::vec3 red(1.0, 0.0, 0.0);
+    // glm::vec3 green(0.0, 1.0, 0.0);
+    // glm::vec3 blue(0.0, 0.0, 1.0);
     ObjectList world;
-    world.add(std::make_shared<Sphere>(Sphere(glm::vec3(0.0, 0.0, -1.0), 0.5, red)));
-    world.add(std::make_shared<Sphere>(Sphere(glm::vec3(0.0, -100.5, -1.0), 100, green)));
+    world.add(std::make_shared<Sphere>(Sphere(glm::vec3(0.0, 0.0, -1.0), 0.5)));
+    world.add(std::make_shared<Sphere>(Sphere(glm::vec3(0.0, -100.5, -1.0), 100)));
 
     // render
     perspectiveCamera.render(image, world);

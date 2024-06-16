@@ -12,7 +12,6 @@ public:
     glm::vec3 point;
     glm::vec3 normal;
     glm::vec3 direction;
-    glm::vec3 color;
     float t;
     bool is_front;
 
