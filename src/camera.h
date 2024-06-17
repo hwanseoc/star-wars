@@ -29,7 +29,7 @@ public:
         float widthf = static_cast<float>(width);
         float heightf = static_cast<float>(height);
 
-        float magnitude = 2.0f * std::tan(fov / 2.0f) / widthf;
+        float magnitude = 2.0f * std::tanf(fov / 2.0f) / widthf;
         dv = glm::normalize(-up) * magnitude;
         du = glm::normalize(glm::cross(direction, up)) * magnitude;
 
