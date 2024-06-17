@@ -8,9 +8,10 @@
 class Sphere : public Object {
     glm::vec3 origin_;
     float radius_;
+    std::shared_ptr<Material> mat_;
 
 public:
-    Sphere(const glm::vec3 &origin, float radius) : origin_(origin), radius_(radius) {}
+    Sphere(const glm::vec3 &origin, float radius, std::shared_ptr<Material> mat) : origin_(origin), radius_(radius), mat_(mat) {}
 
     Hit hit(const Ray &r, float tmin, float tmax) const override {
         glm::vec3 oc = origin_ - r.origin();
@@ -42,6 +43,8 @@ public:
         ret.point = r.at(ret.t);
         ret.set_face_normal(r, glm::normalize((ret.point - origin_) / radius_));
         ret.direction = random_hemisphere(ret.normal);
+        ret.mat = mat_;
+
         return ret;
     }
 };

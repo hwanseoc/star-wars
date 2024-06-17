@@ -2,12 +2,12 @@
 
 #include <cmath>
 #include <cassert>
-#include <random>
 
 #include <glm/glm.hpp>
 
 #include <random.h>
 #include <object.h>
+#include <material.h>
 #include <ray.h>
 
 
@@ -107,14 +107,16 @@ public:
         Hit hit = world.hit(r, 0.001, 1000.0);
 
         if (hit.is_hit) {
-            return 0.5f * get_color(Ray(hit.point, hit.direction), world, depth-1);
+            const auto& [is_scatter, attenuation, scattered] = hit.mat->scatter(r, hit);
+
+            if (is_scatter) {
+                return attenuation * get_color(scattered, world, depth-1);
+            }
+            return glm::vec3(0.0, 0.0, 0.0);
         }
 
         // background
-        //return glm::vec3(1.0, 1.0, 1.0);
-
         float alpha = 0.5 * (r.direction().y + 1.0);
         return (1.0f - alpha) * glm::vec3(1.0, 1.0, 1.0) + alpha * glm::vec3(0.5, 0.7, 1.0);
-        // return glm::vec3(0.5, 0.7, 1.0);
     }
 };

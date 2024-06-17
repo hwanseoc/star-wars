@@ -6,12 +6,15 @@
 
 #include <ray.h>
 
+class Material;
+
 class Hit {
 public:
     bool is_hit;
     glm::vec3 point;
     glm::vec3 normal;
     glm::vec3 direction;
+    std::shared_ptr<Material> mat;
     float t;
     bool is_front;
 

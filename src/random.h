@@ -1,5 +1,7 @@
 #pragma once
 
+#include <random>
+
 #include <glm/gtc/random.hpp>
 
 inline float random_float() {
