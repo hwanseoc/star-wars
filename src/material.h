@@ -70,8 +70,18 @@ public:
         const Hit &hit
     ) const override {
         float refractive_index_face = hit.is_front ? (1.0f / refractive_index_) : refractive_index_;
-        glm::vec3 refracted = refract(r.direction(), hit.normal, refractive_index_face);
-        return std::make_tuple(true, glm::vec3(1.0, 1.0, 1.0), Ray(hit.point, refracted));
+
+        float cos_theta = glm::dot(-r.direction(), hit.normal);
+        float sin_theta = std::sqrt(1.0f - cos_theta * cos_theta);
+
+        glm::vec3 direction;
+        if (refractive_index_face * sin_theta > 1.0f || schlick_reflectance(cos_theta, refractive_index_face) > random_float()) {
+            direction = reflect(r.direction(), hit.normal);
+        } else {
+            direction = refract(r.direction(), hit.normal, refractive_index_face);
+        }
+
+        return std::make_tuple(true, glm::vec3(1.0, 1.0, 1.0), Ray(hit.point, direction));
     }
 private:
     inline glm::vec3 refract(const glm::vec3 &direction, const glm::vec3 &normal, float refractive_index_face) const {
@@ -79,6 +89,16 @@ private:
         float r_vertical_sq = r_vertical.x * r_vertical.x + r_vertical.y * r_vertical.y + r_vertical.z * r_vertical.z;
         glm::vec3 r_horizontal = -std::sqrt(std::fabs(1.0f - r_vertical_sq)) * normal;
         return r_vertical + r_horizontal;
+    }
+
+    inline glm::vec3 reflect(const glm::vec3 &direction, const glm::vec3 &normal) const {
+        return direction - 2 * glm::dot(direction, normal) * normal;
+    }
+
+    inline float schlick_reflectance(float cos_theta, float refractive_index) const {
+        // https://en.wikipedia.org/wiki/Schlick%27s_approximation
+        float r0 = std::pow((1.0f - refractive_index) / (1.0f + refractive_index), 2.0f);
+        return r0 + (1.0f-r0) * std::pow((1-cos_theta) , 5.0f);
     }
 };
 
