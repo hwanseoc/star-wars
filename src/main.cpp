@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <cmath>
+#include <numbers>
 
 #include <lodepng.h>
 #include <glm/glm.hpp>
@@ -23,7 +24,7 @@ int main(int argc, char *argv[]) {
     glm::vec3 center(0.0, 0.0, 0.0);
     glm::vec3 direction(0.0, 0.0, -1.0);
     glm::vec3 up(0.0, 1.0, 0.0);
-    float fov = 121.28f / 360.0f * 2.0f * M_PI;
+    float fov = 121.28f / 360.0f * 2.0f * std::numbers::pi_v<float>;
     int32_t samples = 100;
     int32_t max_depth = 50;
     PerspectiveCamera perspectiveCamera(center, direction, up, height, width, fov, samples, max_depth);
@@ -31,8 +32,8 @@ int main(int argc, char *argv[]) {
     // materials
     std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.8, 0.8, 0.0));
     std::shared_ptr<Material> material_center = std::make_shared<Lambertian>(glm::vec3(0.1, 0.2, 0.5));
-    std::shared_ptr<Material> material_left   = std::make_shared<Metal>(glm::vec3(0.8, 0.8, 0.8));
-    std::shared_ptr<Material> material_right  = std::make_shared<Metal>(glm::vec3(0.8, 0.6, 0.2));
+    std::shared_ptr<Material> material_left   = std::make_shared<Dielectric>(1.50);
+    std::shared_ptr<Material> material_right  = std::make_shared<Metal>(glm::vec3(0.8, 0.6, 0.2), 1.0f);
 
     // objects
     ObjectList world;

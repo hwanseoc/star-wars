@@ -14,6 +14,10 @@ inline glm::vec3 random_sphere() {
     return glm::sphericalRand(1.0f);
 }
 
+inline glm::vec3 random_sphere(float r) {
+    return glm::sphericalRand(r);
+}
+
 inline glm::vec3 random_hemisphere(const glm::vec3& normal) {
     glm::vec3 ret = random_sphere();
     if (glm::dot(ret, normal) > 0.0f){

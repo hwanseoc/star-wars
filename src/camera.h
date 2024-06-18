@@ -29,7 +29,7 @@ public:
         float widthf = static_cast<float>(width);
         float heightf = static_cast<float>(height);
 
-        float magnitude = 2.0f * std::tanf(fov / 2.0f) / widthf;
+        float magnitude = 2.0f * std::tan(fov / 2.0f) / widthf;
         dv = glm::normalize(-up) * magnitude;
         du = glm::normalize(glm::cross(direction, up)) * magnitude;
 
@@ -56,9 +56,9 @@ public:
 
                     pixel /= samples;
                 } else {
-                    pixel.x = 0.0;
-                    pixel.y = 1.0;
-                    pixel.z = 0.0;
+                    pixel.x = 0.0f;
+                    pixel.y = 1.0f;
+                    pixel.z = 0.0f;
                 }
 
                 // linear to gamma
@@ -91,8 +91,8 @@ public:
     Ray get_ray(int32_t h, int32_t w) {
         // float random_h = std::rand() / (RAND_MAX + 1.0f) - 0.5f;
         // float random_w = std::rand() / (RAND_MAX + 1.0f) - 0.5f;
-        float random_h = h + random_float();
-        float random_w = w + random_float();
+        float random_h = static_cast<float>(h) + random_float();
+        float random_w = static_cast<float>(w) + random_float();
         glm::vec3 direction = glm::normalize(
             pixel00 + dv * random_h + du * random_w - center
         );
@@ -104,7 +104,7 @@ public:
             return glm::vec3(0.0, 0.0, 0.0);
         }
 
-        Hit hit = world.hit(r, 0.001, 1000.0);
+        Hit hit = world.hit(r, 0.001f, 1000.0f);
 
         if (hit.is_hit) {
             const auto& [is_scatter, attenuation, scattered] = hit.mat->scatter(r, hit);
@@ -116,7 +116,7 @@ public:
         }
 
         // background
-        float alpha = 0.5 * (r.direction().y + 1.0);
+        float alpha = 0.5f * (r.direction().y + 1.0f);
         return (1.0f - alpha) * glm::vec3(1.0, 1.0, 1.0) + alpha * glm::vec3(0.5, 0.7, 1.0);
     }
 };
