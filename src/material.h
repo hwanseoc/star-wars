@@ -46,7 +46,7 @@ public:
         const Hit &hit
     ) const override {
         glm::vec3 reflected = reflect(r.direction(), hit.normal);
-        reflected = glm::normalize(reflected) + random_sphere(fuzz_);
+        reflected = glm::normalize(reflected) + random_sphere() * fuzz_;
         Ray scattered = Ray(hit.point, glm::normalize(reflected));
         glm::vec3 attenuation = albedo_;
         bool is_scattered = glm::dot(scattered.direction(), hit.normal) > 0;

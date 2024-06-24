@@ -16,21 +16,21 @@ int main(int argc, char *argv[]) {
     std::string filename = "output.png";
 
     // image
-    int32_t width = 400;
-    int32_t height = 225;
+    int32_t width = 1200;
+    int32_t height = 675;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // camera
-    glm::vec3 center(-2.0, 2.0, 1.0);
-    glm::vec3 direction(2.0, -2.0, -2.0);
+    glm::vec3 center(13.0, 2.0, 3.0);
+    glm::vec3 direction(-13.0, -2.0, -3.0);
     direction = glm::normalize(direction);
     glm::vec3 up(0.0, 1.0, 0.0);
     //float fov = 90.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
-    float fov = 2.11681373f/3.5f;
-    int32_t samples = 100;
+    float fov = 0.607537f;
+    int32_t samples = 500;
     int32_t max_depth = 50;
-    float focal_distance = 3.4f;
-    float defocus_angle = 10.0f / 360.0f * 2.0f * std::numbers::pi_v<float>;
+    float focal_distance = 10.0f;
+    float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
 
     PerspectiveCamera perspectiveCamera(
         center,
@@ -46,19 +46,45 @@ int main(int argc, char *argv[]) {
     );
 
     // materials
-    std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.8, 0.8, 0.0));
-    std::shared_ptr<Material> material_center = std::make_shared<Lambertian>(glm::vec3(0.1, 0.2, 0.5));
-    std::shared_ptr<Material> material_left   = std::make_shared<Dielectric>(1.50);
-    std::shared_ptr<Material> material_bubble   = std::make_shared<Dielectric>(1.00 / 1.50);
-    std::shared_ptr<Material> material_right  = std::make_shared<Metal>(glm::vec3(0.8, 0.6, 0.2), 1.0f);
-
-    // objects
     ObjectList world;
-    world.add(std::make_shared<Sphere>(Sphere(glm::vec3( 0.0, -100.5, -1.0), 100.0, material_ground)));
-    world.add(std::make_shared<Sphere>(Sphere(glm::vec3( 0.0,    0.0, -1.2),   0.5, material_center)));
-    world.add(std::make_shared<Sphere>(Sphere(glm::vec3(-1.0,    0.0, -1.0),   0.5, material_left)));
-    world.add(std::make_shared<Sphere>(Sphere(glm::vec3(-1.0,    0.0, -1.0),   0.4, material_bubble)));
-    world.add(std::make_shared<Sphere>(Sphere(glm::vec3( 1.0,    0.0, -1.0),   0.5, material_right)));
+
+    std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.5, 0.5, 0.5));
+    world.add(std::make_shared<Sphere>(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground));
+
+    std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
+    std::shared_ptr<Material> material2 = std::make_shared<Lambertian>(glm::vec3(0.4, 0.2, 0.1));
+    std::shared_ptr<Material> material3 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
+    world.add(std::make_shared<Sphere>(glm::vec3( 0.0, 1.0, 0.0), 1.0, material1));
+    world.add(std::make_shared<Sphere>(glm::vec3( -4.0, 1.0, 0.0), 1.0, material2));
+    world.add(std::make_shared<Sphere>(glm::vec3( 4.0, 1.0, 0.0), 1.0, material3));
+
+    for (float a = -11.0; a < 11.0; a = a + 1.0) {
+        for (float b = -11.0; b < 11.0; b = b + 1.0) {
+            float material_choice = random_float();
+
+            glm::vec3 center(a + 0.9f * random_float(), 0.2, b + 0.9 * random_float());
+
+            if (glm::length(center - glm::vec3(4, 0.2, 0.0)) > 0.9f) {
+                std::shared_ptr<Material> material;
+
+                if (material_choice < 0.8) {
+                    // diffuse
+                    glm::vec3 albedo = glm::vec3(random_float() * random_float(), random_float() * random_float(), random_float() * random_float());
+                    material = std::make_shared<Lambertian>(albedo);
+                } else if (material_choice < 0.95) {
+                    // metal
+                    glm::vec3 albedo = glm::vec3(0.5 + 0.5 * random_float(), 0.5 + 0.5 * random_float(), 0.5 + 0.5 * random_float());
+                    float fuzz = random_float() * 0.5;
+                    material = std::make_shared<Metal>(albedo, fuzz);
+                } else {
+                    // dielectric
+                    material = std::make_shared<Dielectric>(1.5f);
+                }
+
+                world.add(std::make_shared<Sphere>(center, 0.2, material));
+            }
+        }
+    }
 
     // render
     perspectiveCamera.render(image, world);
