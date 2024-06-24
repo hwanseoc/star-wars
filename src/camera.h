@@ -30,8 +30,8 @@ public:
         float heightf = static_cast<float>(height);
 
         float magnitude = 2.0f * std::tan(fov / 2.0f) / widthf;
-        dv = glm::normalize(-up) * magnitude;
         du = glm::normalize(glm::cross(direction, up)) * magnitude;
+        dv = glm::normalize(glm::cross(direction, du))* magnitude;
 
         pixel00 = center + glm::normalize(direction)
                     - du * (widthf / 2.0f)

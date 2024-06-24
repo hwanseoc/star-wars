@@ -21,10 +21,12 @@ int main(int argc, char *argv[]) {
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // camera
-    glm::vec3 center(0.0, 0.0, 0.0);
-    glm::vec3 direction(0.0, 0.0, -1.0);
+    glm::vec3 center(-2.0, 2.0, 1.0);
+    glm::vec3 direction(2.0, -2.0, -2.0);
+    direction = glm::normalize(direction);
     glm::vec3 up(0.0, 1.0, 0.0);
-    float fov = 121.28f / 360.0f * 2.0f * std::numbers::pi_v<float>;
+    //float fov = 90.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
+    float fov = 2.11681373f/3.5f;
     int32_t samples = 100;
     int32_t max_depth = 50;
     PerspectiveCamera perspectiveCamera(center, direction, up, height, width, fov, samples, max_depth);

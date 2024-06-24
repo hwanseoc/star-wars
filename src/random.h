@@ -10,6 +10,11 @@ inline float random_float() {
     return distribution(generator);
 }
 
+inline glm::vec3 random_disk() {
+    glm::vec2 temp = glm::diskRand(1.0f);
+    return glm::vec3(temp.x, temp.y, 0.0f);
+}
+
 inline glm::vec3 random_sphere() {
     return glm::sphericalRand(1.0f);
 }
