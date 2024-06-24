@@ -29,7 +29,21 @@ int main(int argc, char *argv[]) {
     float fov = 2.11681373f/3.5f;
     int32_t samples = 100;
     int32_t max_depth = 50;
-    PerspectiveCamera perspectiveCamera(center, direction, up, height, width, fov, samples, max_depth);
+    float focal_distance = 3.4f;
+    float defocus_angle = 10.0f / 360.0f * 2.0f * std::numbers::pi_v<float>;
+
+    PerspectiveCamera perspectiveCamera(
+        center,
+        direction,
+        up,
+        height,
+        width,
+        fov,
+        focal_distance,
+        defocus_angle,
+        samples,
+        max_depth
+    );
 
     // materials
     std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.8, 0.8, 0.0));

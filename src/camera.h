@@ -13,7 +13,8 @@
 
 class PerspectiveCamera {
     int32_t height, width, samples, max_depth;
-    glm::vec3 center, pixel00, dv, du;
+    float focal_distance, defocus_angle;
+    glm::vec3 center, pixel00, du, dv, disk_u, disk_v;
 
 public:
     PerspectiveCamera(
@@ -23,17 +24,23 @@ public:
         int32_t height,
         int32_t width,
         float fov,
+        float focal_distance,
+        float defocus_angle,
         int32_t samples,
         int32_t max_depth
-    ) : center(center), height(height), width(width), samples(samples), max_depth(max_depth) {
+    ) : center(center), height(height), width(width), focal_distance(focal_distance), samples(samples), max_depth(max_depth), defocus_angle(defocus_angle) {
         float widthf = static_cast<float>(width);
         float heightf = static_cast<float>(height);
 
-        float magnitude = 2.0f * std::tan(fov / 2.0f) / widthf;
+        float magnitude = 2.0f * focal_distance * std::tan(fov / 2.0f) / widthf;
         du = glm::normalize(glm::cross(direction, up)) * magnitude;
-        dv = glm::normalize(glm::cross(direction, du))* magnitude;
+        dv = glm::normalize(glm::cross(direction, du)) * magnitude;
 
-        pixel00 = center + glm::normalize(direction)
+        float disk_radius = focal_distance * std::tan(defocus_angle / 2.0f);
+        disk_u = glm::normalize(glm::cross(direction, up)) * disk_radius;
+        disk_v = glm::normalize(glm::cross(direction, du)) * disk_radius;
+
+        pixel00 = center + focal_distance * glm::normalize(direction)
                     - du * (widthf / 2.0f)
                     - dv * (heightf / 2.0f);
     }
@@ -93,10 +100,19 @@ public:
         // float random_w = std::rand() / (RAND_MAX + 1.0f) - 0.5f;
         float random_h = static_cast<float>(h) + random_float();
         float random_w = static_cast<float>(w) + random_float();
+        glm::vec3 origin;
+
+        if (defocus_angle <= 0) {
+            origin = center;
+        } else {
+            glm::vec2 p = random_disk();
+            origin = center + p.x * disk_u + p.y * disk_v;
+        }
+
         glm::vec3 direction = glm::normalize(
-            pixel00 + dv * random_h + du * random_w - center
+            pixel00 + dv * random_h + du * random_w - origin
         );
-        return Ray(center, direction);
+        return Ray(origin, direction);
     }
 
     glm::vec3 get_color(const Ray &r, const ObjectList &world, int32_t depth) const {
