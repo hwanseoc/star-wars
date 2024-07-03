@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     );
 
     // materials
-    ObjectList world;
+    BVHLeaf world;
 
     std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.5, 0.5, 0.5));
     world.add(std::make_shared<Sphere>(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground));
@@ -58,23 +58,23 @@ int main(int argc, char *argv[]) {
     world.add(std::make_shared<Sphere>(glm::vec3( -4.0, 1.0, 0.0), 1.0, material2));
     world.add(std::make_shared<Sphere>(glm::vec3( 4.0, 1.0, 0.0), 1.0, material3));
 
-    for (float a = -11.0; a < 11.0; a = a + 1.0) {
-        for (float b = -11.0; b < 11.0; b = b + 1.0) {
+    for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
+        for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
             float material_choice = random_float();
 
-            glm::vec3 center(a + 0.9f * random_float(), 0.2, b + 0.9 * random_float());
+            glm::vec3 center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
 
             if (glm::length(center - glm::vec3(4, 0.2, 0.0)) > 0.9f) {
                 std::shared_ptr<Material> material;
 
-                if (material_choice < 0.8) {
+                if (material_choice < 0.8f) {
                     // diffuse
                     glm::vec3 albedo = glm::vec3(random_float() * random_float(), random_float() * random_float(), random_float() * random_float());
                     material = std::make_shared<Lambertian>(albedo);
-                } else if (material_choice < 0.95) {
+                } else if (material_choice < 0.95f) {
                     // metal
-                    glm::vec3 albedo = glm::vec3(0.5 + 0.5 * random_float(), 0.5 + 0.5 * random_float(), 0.5 + 0.5 * random_float());
-                    float fuzz = random_float() * 0.5;
+                    glm::vec3 albedo = glm::vec3(0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float());
+                    float fuzz = random_float() * 0.5f;
                     material = std::make_shared<Metal>(albedo, fuzz);
                 } else {
                     // dielectric
@@ -85,9 +85,10 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+    BVHNode world_bvh(world);
 
     // render
-    perspectiveCamera.render(image, world);
+    perspectiveCamera.render(image, world_bvh);
 
     unsigned int error = lodepng::encode(filename, image, width, height);
     if (error) {

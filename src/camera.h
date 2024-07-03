@@ -45,7 +45,7 @@ public:
                     - dv * (heightf / 2.0f);
     }
 
-    void render(std::vector<uint8_t> &image, const ObjectList& world) {
+    void render(std::vector<uint8_t> &image, const BVHNode& world) {
         for (int32_t h = 0; h < height; ++h) {
             for (int32_t w = 0; w < width; ++w) {
                 std::clog << "\rPixels remaining: " << h * width + w << " out of " << height * width << std::flush;
@@ -81,9 +81,9 @@ public:
                 pixel.z = pixel.z < 0.0f ? 0.0f : pixel.z;
                 pixel.z = pixel.z > 1.0f ? 1.0f : pixel.z;
 
-                uint8_t ir = static_cast<uint8_t>(255.999 * pixel.x);
-                uint8_t ig = static_cast<uint8_t>(255.999 * pixel.y);
-                uint8_t ib = static_cast<uint8_t>(255.999 * pixel.z);
+                uint8_t ir = static_cast<uint8_t>(255.999f * pixel.x);
+                uint8_t ig = static_cast<uint8_t>(255.999f * pixel.y);
+                uint8_t ib = static_cast<uint8_t>(255.999f * pixel.z);
 
                 image[h * width * 4 + w * 4 + 0] = ir;
                 image[h * width * 4 + w * 4 + 1] = ig;
@@ -115,7 +115,7 @@ public:
         return Ray(origin, direction);
     }
 
-    glm::vec3 get_color(const Ray &r, const ObjectList &world, int32_t depth) const {
+    glm::vec3 get_color(const Ray &r, const BVHNode &world, int32_t depth) const {
         if (depth <= 0) {
             return glm::vec3(0.0, 0.0, 0.0);
         }

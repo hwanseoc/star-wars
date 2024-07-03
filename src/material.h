@@ -22,9 +22,9 @@ public:
         glm::vec3 scattered_direction = hit.normal + random_sphere();
 
         // Catch bad scatter direction
-        if (std::fabs(scattered_direction.x) < 1e-8 &&
-            std::fabs(scattered_direction.y) < 1e-8 &&
-            std::fabs(scattered_direction.z) < 1e-8) {
+        if (std::fabs(scattered_direction.x) < 1e-8f &&
+            std::fabs(scattered_direction.y) < 1e-8f &&
+            std::fabs(scattered_direction.z) < 1e-8f) {
             scattered_direction = hit.normal;
         }
 

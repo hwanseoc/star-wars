@@ -22,7 +22,7 @@ public:
 
         Hit ret;
 
-        if (discriminant < 0.0) {
+        if (discriminant < 0.0f) {
             ret.is_hit = false;
             return ret;
         }
@@ -46,5 +46,10 @@ public:
         ret.mat = mat_;
 
         return ret;
+    }
+
+    AABB aabb() const override {
+        glm::vec3 rvec(radius_, radius_, radius_);
+        return AABB(origin_ - rvec, origin_ + rvec);
     }
 };
