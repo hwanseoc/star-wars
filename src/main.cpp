@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     );
 
     // materials
-    BVHLeaf world;
+    World world;
 
     std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.5, 0.5, 0.5));
     world.add(std::make_shared<Sphere>(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground));
