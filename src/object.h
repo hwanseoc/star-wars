@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include <glm/glm.hpp>
 
 #include <random.h>
@@ -10,8 +8,14 @@
 class Material;
 
 struct BVHHit {
-    bool is_hit;
+    int64_t i;
     float t;
+    void set_no_hit() {
+        i = -1;
+    }
+    bool is_hit() const {
+        return i == -1;
+    }
 };
 
 class Hit {
@@ -101,5 +105,9 @@ public:
 
     const std::vector<std::shared_ptr<Object>>& get_objects() const {
         return objects;
+    }
+    
+    const std::shared_ptr<Object>& get_object(int64_t i) const {
+        return objects[i];
     }
 };

@@ -6,11 +6,12 @@
 #include <lodepng.h>
 #include <glm/glm.hpp>
 
+#include <ray.h>
 #include <camera.h>
 #include <object.h>
-#include <sphere.h>
 #include <material.h>
-#include <ray.h>
+#include <bvh.h>
+#include <sphere.h>
 
 int main(int argc, char *argv[]) {
     std::string filename = "output.png";
@@ -85,10 +86,10 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    BVHNode world_bvh(world);
+    BVH bvh(world);
 
     // render
-    perspectiveCamera.render(image, world_bvh);
+    perspectiveCamera.render(image, bvh, world);
 
     unsigned int error = lodepng::encode(filename, image, width, height);
     if (error) {

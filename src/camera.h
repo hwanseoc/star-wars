@@ -1,14 +1,15 @@
 #pragma once
 
 #include <cmath>
-#include <cassert>
 
 #include <glm/glm.hpp>
 
 #include <random.h>
-#include <object.h>
-#include <material.h>
+
 #include <ray.h>
+#include <object.h>
+#include <bvh.h>
+#include <material.h>
 
 
 class PerspectiveCamera {
@@ -45,7 +46,7 @@ public:
                     - dv * (heightf / 2.0f);
     }
 
-    void render(std::vector<uint8_t> &image, const BVHNode& world) {
+    void render(std::vector<uint8_t> &image, const BVH& bvh, const World& world) {
         for (int32_t h = 0; h < height; ++h) {
             for (int32_t w = 0; w < width; ++w) {
                 std::clog << "\rPixels remaining: " << h * width + w << " out of " << height * width << std::flush;
@@ -57,7 +58,7 @@ public:
                 if (true) {
                     for (int32_t s = 0; s < samples; ++s) {
                         Ray r = this->get_ray(h, w);
-                        glm::vec3 sampled = get_color(r, world, 50);
+                        glm::vec3 sampled = get_color(bvh, world, r, 50);
                         pixel += sampled;
                     }
 
@@ -115,18 +116,22 @@ public:
         return Ray(origin, direction);
     }
 
-    glm::vec3 get_color(const Ray &r, const BVHNode &world, int32_t depth) const {
+    glm::vec3 get_color(const BVH &bvh, const World &world, const Ray &r, int32_t depth) const {
         if (depth <= 0) {
             return glm::vec3(0.0, 0.0, 0.0);
         }
 
-        Hit hit = world.hit(r, 0.001f, 1000.0f);
+        BVHHit bvh_hit = bvh.hit(world, r, 0.001f, 1000.0f);
 
-        if (hit.is_hit) {
-            const auto& [is_scatter, attenuation, scattered] = hit.mat->scatter(r, hit);
+        if (bvh_hit.is_hit()) {
+            const std::shared_ptr<Object> obj = world.get_object(bvh_hit.i);
+            Hit hit = obj->hit(r, 0.001f, 1000.0f);
+
+            // bool is_scatter, glm::vec3 attenuation, Ray ray_scatter
+            const auto& [is_scatter, attenuation, ray_scatter] = hit.mat->scatter(r, hit);
 
             if (is_scatter) {
-                return attenuation * get_color(scattered, world, depth-1);
+                return attenuation * get_color(bvh, world, ray_scatter, depth-1);
             }
             return glm::vec3(0.0, 0.0, 0.0);
         }

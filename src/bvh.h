@@ -1,12 +1,8 @@
 #pragma once
 
 #include <vector>
-#include <object.h>
 
-struct BVHHit {
-    int64_t i; // if no object is hit, i == -1
-    float t;
-};
+#include <object.h>
 
 class BVH {
     struct BVHNode {
@@ -14,6 +10,14 @@ class BVH {
         AABB aabb;
         int64_t left;
         int64_t right;
+
+        void set_leaf_node() {
+            i = -1;
+        }
+
+        bool is_leaf_node() const {
+            return i == -1;
+        }
     };
 
     std::vector<BVHNode> nodes;
@@ -23,7 +27,7 @@ public:
     BVH(const World &w) {
         const std::vector<std::shared_ptr<Object>> &objects = w.get_objects();
 
-        for (size_t i = 0; i < objects.size(); ++i) {
+        for (int64_t i = 0; i < static_cast<int64_t>(objects.size()); ++i) {
             BVHNode node = {
                 .i = i,
                 .aabb = objects[i]->aabb(),
@@ -71,7 +75,7 @@ public:
         int64_t right = build_recursive(mid, end);
 
         BVHNode node = {
-            .i = -1,
+            .i = -1, // is not leaf node
             .aabb = aabb,
             .left = left,
             .right = right
@@ -86,61 +90,46 @@ public:
     }
 
     BVHHit hit_recursive(const World &w, const Ray &r, float tmin, float tmax, int64_t parent_node) const {
-        const std::vector<std::shared_ptr<Object>> &objects = w.get_objects();
         const BVHNode &node = nodes[parent_node];
 
-        // node.hit
-        if (!node.aabb.hit(r, tmin, tmax)){
-            return BVHHit{-1, 0.0f};
+
+        BVHHit bvhhit;
+        bvhhit.set_no_hit();
+
+        // if not node.hit
+        if (!node.aabb.hit(r, tmin, tmax)) {
+            return bvhhit;
         }
 
         // object.hit
-        bool is_leaf = node.i != -1;
-        if (is_leaf) {
-            const std::shared_ptr<Object> &object = objects[node.i];
-            return 
+        if (node.is_leaf_node()) {
+            const std::shared_ptr<Object> &object = w.get_object(node.i);
+
+            BVHHit bvhhit = object->bvh_hit(r, tmin, tmax);
+
+            if (bvhhit.is_hit()){
+                bvhhit.i = node.i;
+            }
+
+            return bvhhit;
+        } else {
+            // TODO : make sure hit_right does not have dependency on hit_left,
+            // so that we can parallelize hit_left and hit_right
+            BVHHit bvhhit_left = hit_recursive(w, r, tmin, tmax, node.left);
+
+            if (bvhhit_left.is_hit()) {
+                tmax = bvhhit_left.t;
+            }
+
+            BVHHit bvhhit_right = hit_recursive(w, r, tmin, tmax, node.right);
+
+            if (bvhhit_right.is_hit()) {
+                return bvhhit_right;
+            } else if (bvhhit_left.is_hit()){
+                return bvhhit_left;
+            }
+
+            return bvhhit;
         }
-
-
-        //left.hit
-        // right.hit
-
     }
 };
-
-// class BVHNode {
-//     std::shared_ptr<Object> left;
-//     std::shared_ptr<Object> right;
-//     AABB box_aabb;
-// public:
-
-//     Hit hit(const Ray &r, float tmin, float tmax) const {
-//         Hit ret;
-//         ret.is_hit = false;
-
-//         if (!box_aabb.hit(r, tmin, tmax)) {
-//             return ret;
-//         }
-
-//         Hit hit_left = left->hit(r, tmin, tmax);
-
-//         if (hit_left.is_hit) {
-//             tmax = hit_left.t;
-//         }
-
-//         Hit hit_right = right->hit(r, tmin, tmax);
-
-//         if (hit_right.is_hit) {
-//             return hit_right;
-//         } else if (hit_left.is_hit) {
-//             return hit_left;
-//         }
-
-//         return ret;
-//     }
-
-//     AABB aabb() const {
-//         return box_aabb;
-//     }
-// };
-
