@@ -53,9 +53,9 @@ public:
 
                 glm::vec3 pixel(0.0, 0.0, 0.0);
 
-                // if (h >= 20 && h < 50 && w >= 200 && w < 210) {
-                // if (h == 25 && w == 200) {
                 if (true) {
+                // if (h == 50 && w == 200) {
+                //if (h >= 500 && h < 501 && w >= 200 && w < 210) {
                     for (int32_t s = 0; s < samples; ++s) {
                         Ray r = this->get_ray(h, w);
                         glm::vec3 sampled = get_color(bvh, world, r, 50);
@@ -131,7 +131,7 @@ public:
             const auto& [is_scatter, attenuation, ray_scatter] = hit.mat->scatter(r, hit);
 
             if (is_scatter) {
-                return attenuation * get_color(bvh, world, ray_scatter, depth-1);
+                return attenuation * get_color(bvh, world, ray_scatter, depth - 1);
             }
             return glm::vec3(0.0, 0.0, 0.0);
         }

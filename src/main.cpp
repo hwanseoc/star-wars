@@ -17,8 +17,8 @@ int main(int argc, char *argv[]) {
     std::string filename = "output.png";
 
     // image
-    int32_t width = 1200;
-    int32_t height = 675;
+    int32_t width = 1200/4;
+    int32_t height = 675/4;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // camera

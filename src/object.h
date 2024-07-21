@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <glm/glm.hpp>
 
 #include <random.h>
@@ -8,13 +10,14 @@
 class Material;
 
 struct BVHHit {
-    int64_t i;
+    int64_t i; // -1 means no hit
     float t;
+
     void set_no_hit() {
         i = -1;
     }
     bool is_hit() const {
-        return i == -1;
+        return i != -1;
     }
 };
 

@@ -6,17 +6,16 @@
 
 class BVH {
     struct BVHNode {
-        int64_t i; // if not a leaf node, i == -1
+        // struct BVHLeafNode; // is_leaf, aabb, ptr
+        // struct BVHInnerlNode; // is_leaf, aabb, left, right
+
+        int64_t i; // if not leaf node, i == -1
         AABB aabb;
         int64_t left;
         int64_t right;
 
-        void set_leaf_node() {
-            i = -1;
-        }
-
         bool is_leaf_node() const {
-            return i == -1;
+            return i != -1;
         }
     };
 
@@ -36,10 +35,11 @@ public:
             };
             nodes.push_back(node);
         }
-        
+
         root = build_recursive(0, objects.size());
     }
 
+private:
     int64_t build_recursive(int64_t start, int64_t end) {
         int64_t n_objects = end - start;
 
@@ -85,10 +85,12 @@ public:
         return nodes.size() - 1;
     }
 
+public:
     BVHHit hit(const World &w, const Ray &r, float tmin, float tmax) const {
         return hit_recursive(w, r, tmin, tmax, root);
     }
 
+private:
     BVHHit hit_recursive(const World &w, const Ray &r, float tmin, float tmax, int64_t parent_node) const {
         const BVHNode &node = nodes[parent_node];
 
