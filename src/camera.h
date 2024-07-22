@@ -29,7 +29,7 @@ public:
         float defocus_angle,
         int32_t samples,
         int32_t max_depth
-    ) : center(center), height(height), width(width), focal_distance(focal_distance), samples(samples), max_depth(max_depth), defocus_angle(defocus_angle) {
+    ) : height(height), width(width), samples(samples), max_depth(max_depth), focal_distance(focal_distance), defocus_angle(defocus_angle), center(center) {
         float widthf = static_cast<float>(width);
         float heightf = static_cast<float>(height);
 
@@ -123,9 +123,9 @@ public:
 
         BVHHit bvh_hit = bvh.hit(world, r, 0.001f, 1000.0f);
 
-        if (bvh_hit.is_hit()) {
-            const std::shared_ptr<Object> obj = world.get_object(bvh_hit.i);
-            Hit hit = obj->hit(r, 0.001f, 1000.0f);
+        if (bvh_hit.is_hit) {
+            const std::shared_ptr<Object> obj = bvh_hit.obj;
+            Hit hit = obj->hit(bvh_hit, r, 0.001f, 1000.0f);
 
             // bool is_scatter, glm::vec3 attenuation, Ray ray_scatter
             const auto& [is_scatter, attenuation, ray_scatter] = hit.mat->scatter(r, hit);

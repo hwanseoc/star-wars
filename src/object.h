@@ -8,27 +8,19 @@
 #include <ray.h>
 
 class Material;
+class Object;
 
 struct BVHHit {
-    int64_t i; // -1 means no hit
+    bool is_hit;
     float t;
-
-    void set_no_hit() {
-        i = -1;
-    }
-    bool is_hit() const {
-        return i != -1;
-    }
+    std::shared_ptr<Object> obj;
 };
 
-class Hit {
-public:
-    bool is_hit;
+struct Hit {
     glm::vec3 point;
     glm::vec3 normal;
     glm::vec3 direction;
     std::shared_ptr<Material> mat;
-    float t;
     bool is_front;
 
     void set_face_normal(const Ray &r, const glm::vec3 &outward_normal) {
@@ -81,7 +73,7 @@ public:
 
 class Object {
 public:
-    virtual Hit hit(const Ray &r, float tmin, float tmax) const = 0;
+    virtual Hit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const = 0;
 
     virtual AABB aabb() const = 0;
 
@@ -108,9 +100,5 @@ public:
 
     const std::vector<std::shared_ptr<Object>>& get_objects() const {
         return objects;
-    }
-    
-    const std::shared_ptr<Object>& get_object(int64_t i) const {
-        return objects[i];
     }
 };

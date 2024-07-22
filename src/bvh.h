@@ -6,17 +6,11 @@
 
 class BVH {
     struct BVHNode {
-        // struct BVHLeafNode; // is_leaf, aabb, ptr
-        // struct BVHInnerlNode; // is_leaf, aabb, left, right
-
-        int64_t i; // if not leaf node, i == -1
+        bool is_leaf;
         AABB aabb;
         int64_t left;
         int64_t right;
-
-        bool is_leaf_node() const {
-            return i != -1;
-        }
+        std::shared_ptr<Object> obj;
     };
 
     std::vector<BVHNode> nodes;
@@ -26,12 +20,11 @@ public:
     BVH(const World &w) {
         const std::vector<std::shared_ptr<Object>> &objects = w.get_objects();
 
-        for (int64_t i = 0; i < static_cast<int64_t>(objects.size()); ++i) {
+        for (const std::shared_ptr<Object> &obj : objects) {
             BVHNode node = {
-                .i = i,
-                .aabb = objects[i]->aabb(),
-                .left = 0,
-                .right = 0
+                .is_leaf = true,
+                .aabb = obj->aabb(),
+                .obj = obj
             };
             nodes.push_back(node);
         }
@@ -75,7 +68,7 @@ private:
         int64_t right = build_recursive(mid, end);
 
         BVHNode node = {
-            .i = -1, // is not leaf node
+            .is_leaf = false,
             .aabb = aabb,
             .left = left,
             .right = right
@@ -94,9 +87,9 @@ private:
     BVHHit hit_recursive(const World &w, const Ray &r, float tmin, float tmax, int64_t parent_node) const {
         const BVHNode &node = nodes[parent_node];
 
-
         BVHHit bvhhit;
-        bvhhit.set_no_hit();
+        bvhhit.is_hit = false;
+        bvhhit.t = 0.0f;
 
         // if not node.hit
         if (!node.aabb.hit(r, tmin, tmax)) {
@@ -104,13 +97,13 @@ private:
         }
 
         // object.hit
-        if (node.is_leaf_node()) {
-            const std::shared_ptr<Object> &object = w.get_object(node.i);
+        if (node.is_leaf) {
+            const std::shared_ptr<Object> &object = node.obj;
 
             BVHHit bvhhit = object->bvh_hit(r, tmin, tmax);
 
-            if (bvhhit.is_hit()){
-                bvhhit.i = node.i;
+            if (bvhhit.is_hit){
+                bvhhit.obj = object;
             }
 
             return bvhhit;
@@ -119,15 +112,15 @@ private:
             // so that we can parallelize hit_left and hit_right
             BVHHit bvhhit_left = hit_recursive(w, r, tmin, tmax, node.left);
 
-            if (bvhhit_left.is_hit()) {
+            if (bvhhit_left.is_hit) {
                 tmax = bvhhit_left.t;
             }
 
             BVHHit bvhhit_right = hit_recursive(w, r, tmin, tmax, node.right);
 
-            if (bvhhit_right.is_hit()) {
+            if (bvhhit_right.is_hit) {
                 return bvhhit_right;
-            } else if (bvhhit_left.is_hit()){
+            } else if (bvhhit_left.is_hit){
                 return bvhhit_left;
             }
 
