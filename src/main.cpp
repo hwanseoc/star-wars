@@ -2,6 +2,7 @@
 #include <memory>
 #include <cmath>
 #include <numbers>
+#include <ctime>
 
 #include <lodepng.h>
 #include <glm/glm.hpp>
@@ -14,11 +15,15 @@
 #include <sphere.h>
 
 int main(int argc, char *argv[]) {
+    std::time_t start, finish;
+    start = time(NULL);
     std::string filename = "output.png";
 
     // image
     int32_t width = 1200/4;
     int32_t height = 675/4;
+    // int32_t width = 2560;
+    // int32_t height = 1440;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // camera
@@ -90,10 +95,14 @@ int main(int argc, char *argv[]) {
 
     // render
     perspectiveCamera.render(image, bvh, world);
+    // perspectiveCamera.parallel_render(image, bvh, world);
 
     unsigned int error = lodepng::encode(filename, image, width, height);
     if (error) {
         std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
     }
+
+    finish = time(NULL);
+    std::cout << "exec time:" << static_cast<double>(finish - start) << std::endl;
 }
 
