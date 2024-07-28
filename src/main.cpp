@@ -3,6 +3,7 @@
 #include <cmath>
 #include <numbers>
 #include <ctime>
+#include <chrono>
 
 #include <lodepng.h>
 #include <glm/glm.hpp>
@@ -15,15 +16,13 @@
 #include <sphere.h>
 
 int main(int argc, char *argv[]) {
-    std::time_t start, finish;
-    start = time(NULL);
+    auto start = std::chrono::high_resolution_clock::now();
+
     std::string filename = "output.png";
 
     // image
-    // int32_t width = 1200/32;
-    // int32_t height = 675/32;
-    int32_t width = 2;
-    int32_t height = 2;
+    int32_t width = 1200/16;
+    int32_t height = 675/16;
     // int32_t width = 2560;
     // int32_t height = 1440;
     std::vector<uint8_t> image(height * width * 4); // rgba
@@ -108,7 +107,7 @@ int main(int argc, char *argv[]) {
         std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
     }
 
-    finish = time(NULL);
-    std::cout << "exec time:" << static_cast<double>(finish - start) << std::endl;
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+    std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
 }
-

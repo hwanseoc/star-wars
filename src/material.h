@@ -2,6 +2,7 @@
 
 #include <random.h>
 #include <object.h>
+#include <texture.h>
 
 class Material {
 public:
@@ -10,10 +11,11 @@ public:
 
 
 class Lambertian : public Material {
-    glm::vec3 albedo_;
+    std::shared_ptr<Texture> texture;
 
 public:
-    Lambertian(const glm::vec3 albedo) :  albedo_(albedo) {}
+    Lambertian(const glm::vec3 albedo) :  texture(std::make_shared<SolidTexture>(albedo)) {}
+    Lambertian(const std::shared_ptr<Texture> &texture) :  texture(texture) {}
 
     std::tuple<bool, glm::vec3, Ray> scatter(
         const Ray &r,
@@ -29,26 +31,26 @@ public:
         }
 
         Ray scattered = Ray(hit.point, glm::normalize(scattered_direction));
-        glm::vec3 attenuation = albedo_;
+        glm::vec3 attenuation = texture->value(hit.u, hit.v, hit.point);
         return std::make_tuple(true, attenuation, scattered);
     }
 };
 
 class Metal : public Material {
-    glm::vec3 albedo_;
-    float fuzz_;
+    glm::vec3 albedo;
+    float fuzz;
 
 public:
-    Metal(const glm::vec3 albedo, float fuzz) : albedo_(albedo), fuzz_(fuzz) {}
+    Metal(const glm::vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
 
     std::tuple<bool, glm::vec3, Ray> scatter(
         const Ray &r,
         const ColorHit &hit
     ) const override {
         glm::vec3 reflected = reflect(r.direction(), hit.normal);
-        reflected = glm::normalize(reflected) + random_sphere() * fuzz_;
+        reflected = glm::normalize(reflected) + random_sphere() * fuzz;
         Ray scattered = Ray(hit.point, glm::normalize(reflected));
-        glm::vec3 attenuation = albedo_;
+        glm::vec3 attenuation = albedo;
         bool is_scattered = glm::dot(scattered.direction(), hit.normal) > 0;
         return std::make_tuple(is_scattered, attenuation, scattered);
     }
@@ -60,16 +62,16 @@ private:
 };
 
 class Dielectric : public Material {
-    float refractive_index_;
+    float refractive_index;
 
 public:
-    Dielectric(float refractive_index) : refractive_index_(refractive_index) {}
+    Dielectric(float refractive_index) : refractive_index(refractive_index) {}
 
     std::tuple<bool, glm::vec3, Ray> scatter(
         const Ray &r,
         const ColorHit &hit
     ) const override {
-        float refractive_index_face = hit.is_front ? (1.0f / refractive_index_) : refractive_index_;
+        float refractive_index_face = hit.is_front ? (1.0f / refractive_index) : refractive_index;
 
         float cos_theta = glm::dot(-r.direction(), hit.normal);
         float sin_theta = std::sqrt(1.0f - cos_theta * cos_theta);
