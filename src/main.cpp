@@ -2,22 +2,28 @@
 #include <memory>
 #include <cmath>
 #include <numbers>
+#include <ctime>
 
 #include <lodepng.h>
 #include <glm/glm.hpp>
 
+#include <ray.h>
 #include <camera.h>
 #include <object.h>
-#include <sphere.h>
 #include <material.h>
-#include <ray.h>
+#include <bvh.h>
+#include <sphere.h>
 
 int main(int argc, char *argv[]) {
+    std::time_t start, finish;
+    start = time(NULL);
     std::string filename = "output.png";
 
     // image
-    int32_t width = 1200;
-    int32_t height = 675;
+    int32_t width = 1200/4;
+    int32_t height = 675/4;
+    // int32_t width = 2560;
+    // int32_t height = 1440;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // camera
@@ -46,7 +52,7 @@ int main(int argc, char *argv[]) {
     );
 
     // materials
-    ObjectList world;
+    World world;
 
     std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.5, 0.5, 0.5));
     world.add(std::make_shared<Sphere>(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground));
@@ -58,23 +64,23 @@ int main(int argc, char *argv[]) {
     world.add(std::make_shared<Sphere>(glm::vec3( -4.0, 1.0, 0.0), 1.0, material2));
     world.add(std::make_shared<Sphere>(glm::vec3( 4.0, 1.0, 0.0), 1.0, material3));
 
-    for (float a = -11.0; a < 11.0; a = a + 1.0) {
-        for (float b = -11.0; b < 11.0; b = b + 1.0) {
+    for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
+        for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
             float material_choice = random_float();
 
-            glm::vec3 center(a + 0.9f * random_float(), 0.2, b + 0.9 * random_float());
+            glm::vec3 center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
 
             if (glm::length(center - glm::vec3(4, 0.2, 0.0)) > 0.9f) {
                 std::shared_ptr<Material> material;
 
-                if (material_choice < 0.8) {
+                if (material_choice < 0.8f) {
                     // diffuse
                     glm::vec3 albedo = glm::vec3(random_float() * random_float(), random_float() * random_float(), random_float() * random_float());
                     material = std::make_shared<Lambertian>(albedo);
-                } else if (material_choice < 0.95) {
+                } else if (material_choice < 0.95f) {
                     // metal
-                    glm::vec3 albedo = glm::vec3(0.5 + 0.5 * random_float(), 0.5 + 0.5 * random_float(), 0.5 + 0.5 * random_float());
-                    float fuzz = random_float() * 0.5;
+                    glm::vec3 albedo = glm::vec3(0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float());
+                    float fuzz = random_float() * 0.5f;
                     material = std::make_shared<Metal>(albedo, fuzz);
                 } else {
                     // dielectric
@@ -85,13 +91,18 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+    BVH bvh(world);
 
     // render
-    perspectiveCamera.render(image, world);
+    perspectiveCamera.render(image, bvh, world);
+    // perspectiveCamera.parallel_render(image, bvh, world);
 
     unsigned int error = lodepng::encode(filename, image, width, height);
     if (error) {
         std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
     }
+
+    finish = time(NULL);
+    std::cout << "exec time:" << static_cast<double>(finish - start) << std::endl;
 }
 
