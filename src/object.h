@@ -13,13 +13,15 @@ class Object;
 struct BVHHit {
     bool is_hit;
     float t;
-    std::shared_ptr<Object> obj;
+    Object* obj;
 };
 
-struct Hit {
+struct ColorHit {
     glm::vec3 point;
     glm::vec3 normal;
     glm::vec3 direction;
+    float u; // texture x coord
+    float v; // texture y coord
     std::shared_ptr<Material> mat;
     bool is_front;
 
@@ -73,32 +75,42 @@ public:
 
 class Object {
 public:
-    virtual Hit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const = 0;
+    virtual ~Object() = default;
 
     virtual AABB aabb() const = 0;
+
+    virtual ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const = 0;
 
     virtual BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const = 0;
 };
 
 class World {
-    std::vector<std::shared_ptr<Object>> objects;
+    std::vector<Object*> objects;
     AABB box_aabb;
 
 public:
+    World() {}
+
+    ~World() {
+        for (Object* &obj_ptr : objects) {
+            delete obj_ptr;
+        }
+    }
+
     AABB aabb() const {
         return box_aabb;
     }
 
-    void clear() {
-        objects.clear();
+    template <typename OBJ_T>
+    void add(OBJ_T &obj) {
+        OBJ_T *temp = new OBJ_T(obj);
+
+        objects.push_back(temp);
+
+        box_aabb = AABB(box_aabb, temp->aabb());
     }
 
-    void add(std::shared_ptr<Object> object) {
-        objects.push_back(object);
-        box_aabb = AABB(box_aabb, object->aabb());
-    }
-
-    const std::vector<std::shared_ptr<Object>>& get_objects() const {
+    std::vector<Object*>& get_objects() {
         return objects;
     }
 };

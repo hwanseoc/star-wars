@@ -10,17 +10,17 @@ class BVH {
         AABB aabb;
         int64_t left;
         int64_t right;
-        std::shared_ptr<Object> obj;
+        Object* obj;
     };
 
     std::vector<BVHNode> nodes;
     int64_t root = -1;
 
 public:
-    BVH(const World &w) {
-        const std::vector<std::shared_ptr<Object>> &objects = w.get_objects();
+    BVH(World &w) {
+        std::vector<Object*> &objects = w.get_objects();
 
-        for (const std::shared_ptr<Object> &obj : objects) {
+        for (Object* &obj : objects) {
             BVHNode node = {
                 .is_leaf = true,
                 .aabb = obj->aabb(),
@@ -98,7 +98,7 @@ private:
 
         // object.hit
         if (node.is_leaf) {
-            const std::shared_ptr<Object> &object = node.obj;
+            Object* object = node.obj;
 
             BVHHit bvhhit = object->bvh_hit(r, tmin, tmax);
 

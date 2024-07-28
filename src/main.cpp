@@ -20,8 +20,10 @@ int main(int argc, char *argv[]) {
     std::string filename = "output.png";
 
     // image
-    int32_t width = 1200/4;
-    int32_t height = 675/4;
+    // int32_t width = 1200/32;
+    // int32_t height = 675/32;
+    int32_t width = 2;
+    int32_t height = 2;
     // int32_t width = 2560;
     // int32_t height = 1440;
     std::vector<uint8_t> image(height * width * 4); // rgba
@@ -55,14 +57,18 @@ int main(int argc, char *argv[]) {
     World world;
 
     std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.5, 0.5, 0.5));
-    world.add(std::make_shared<Sphere>(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground));
+    Sphere sphere_ground(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
+    world.add(sphere_ground);
 
     std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
     std::shared_ptr<Material> material2 = std::make_shared<Lambertian>(glm::vec3(0.4, 0.2, 0.1));
     std::shared_ptr<Material> material3 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
-    world.add(std::make_shared<Sphere>(glm::vec3( 0.0, 1.0, 0.0), 1.0, material1));
-    world.add(std::make_shared<Sphere>(glm::vec3( -4.0, 1.0, 0.0), 1.0, material2));
-    world.add(std::make_shared<Sphere>(glm::vec3( 4.0, 1.0, 0.0), 1.0, material3));
+    Sphere sphere1(glm::vec3( 0.0, 1.0, 0.0), 1.0, material1);
+    Sphere sphere2(glm::vec3( -4.0, 1.0, 0.0), 1.0, material2);
+    Sphere sphere3(glm::vec3( 4.0, 1.0, 0.0), 1.0, material3);
+    world.add(sphere1);
+    world.add(sphere2);
+    world.add(sphere3);
 
     for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
         for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
@@ -86,8 +92,8 @@ int main(int argc, char *argv[]) {
                     // dielectric
                     material = std::make_shared<Dielectric>(1.5f);
                 }
-
-                world.add(std::make_shared<Sphere>(center, 0.2, material));
+                Sphere sphere(center, 0.2, material);
+                world.add(sphere);
             }
         }
     }

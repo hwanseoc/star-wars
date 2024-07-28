@@ -204,8 +204,8 @@ public:
         BVHHit bvh_hit = bvh.hit(world, r, 0.001f, 1000.0f);
 
         if (bvh_hit.is_hit) {
-            const std::shared_ptr<Object> obj = bvh_hit.obj;
-            Hit hit = obj->hit(bvh_hit, r, 0.001f, 1000.0f);
+            Object *obj = bvh_hit.obj;
+            ColorHit hit = obj->hit(bvh_hit, r, 0.001f, 1000.0f);
 
             // bool is_scatter, glm::vec3 attenuation, Ray ray_scatter
             const auto& [is_scatter, attenuation, ray_scatter] = hit.mat->scatter(r, hit);

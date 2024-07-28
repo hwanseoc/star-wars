@@ -5,7 +5,7 @@
 
 class Material {
 public:
-    virtual std::tuple<bool, glm::vec3, Ray> scatter(const Ray &r, const Hit &hit) const = 0;
+    virtual std::tuple<bool, glm::vec3, Ray> scatter(const Ray &r, const ColorHit &hit) const = 0;
 };
 
 
@@ -17,7 +17,7 @@ public:
 
     std::tuple<bool, glm::vec3, Ray> scatter(
         const Ray &r,
-        const Hit &hit
+        const ColorHit &hit
     ) const override {
         glm::vec3 scattered_direction = hit.normal + random_sphere();
 
@@ -43,7 +43,7 @@ public:
 
     std::tuple<bool, glm::vec3, Ray> scatter(
         const Ray &r,
-        const Hit &hit
+        const ColorHit &hit
     ) const override {
         glm::vec3 reflected = reflect(r.direction(), hit.normal);
         reflected = glm::normalize(reflected) + random_sphere() * fuzz_;
@@ -67,7 +67,7 @@ public:
 
     std::tuple<bool, glm::vec3, Ray> scatter(
         const Ray &r,
-        const Hit &hit
+        const ColorHit &hit
     ) const override {
         float refractive_index_face = hit.is_front ? (1.0f / refractive_index_) : refractive_index_;
 
