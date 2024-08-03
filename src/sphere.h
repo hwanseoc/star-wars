@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <numbers>
 
 #include <glm/glm.hpp>
 
@@ -17,9 +18,17 @@ public:
     ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const override {
         ColorHit ret;
         ret.point = r.at(bvhhit.t);
-        ret.set_face_normal(r, glm::normalize((ret.point - origin_) / radius_));
+        glm::vec3 outward_normal = glm::normalize((ret.point - origin_) / radius_);
+        ret.is_front = glm::dot(r.direction(), outward_normal) < 0.0f;
+        ret.normal = ret.is_front ? outward_normal : -outward_normal;
         ret.direction = random_hemisphere(ret.normal);
         ret.mat = mat_;
+
+        float theta = std::acos(-outward_normal.y);
+        float phi = std::atan2(-outward_normal.z, outward_normal.x) + std::numbers::pi_v<float>;
+
+        ret.u = phi / (2.0f * std::numbers::pi_v<float>);
+        ret.v = theta / std::numbers::pi_v<float>;
 
         return ret;
     }

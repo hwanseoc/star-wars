@@ -24,11 +24,6 @@ struct ColorHit {
     float v; // texture y coord
     std::shared_ptr<Material> mat;
     bool is_front;
-
-    void set_face_normal(const Ray &r, const glm::vec3 &outward_normal) {
-        is_front = glm::dot(r.direction(), outward_normal) < 0.0f;
-        normal = is_front ? outward_normal : -outward_normal;
-    }
 };
 
 class AABB {

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <thread>
+#include <algorithm>
 
 #include <glm/glm.hpp>
 
@@ -53,7 +54,7 @@ public:
     void render(std::vector<uint8_t> &image, const BVH& bvh, const World& world) {
         for (int32_t h = 0; h < height; ++h) {
             for (int32_t w = 0; w < width; ++w) {
-                std::clog << "\rPixels remaining: " << h * width + w + 1<< " out of " << height * width << std::flush;
+                std::clog << "\rPixels processed: " << h * width + w + 1 << " out of " << height * width << std::flush;
 
                 glm::vec3 pixel(0.0, 0.0, 0.0);
 
@@ -79,12 +80,9 @@ public:
                 pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
 
                 // clamp
-                pixel.x = pixel.x < 0.0f ? 0.0f : pixel.x;
-                pixel.x = pixel.x > 1.0f ? 1.0f : pixel.x;
-                pixel.y = pixel.y < 0.0f ? 0.0f : pixel.y;
-                pixel.y = pixel.y > 1.0f ? 1.0f : pixel.y;
-                pixel.z = pixel.z < 0.0f ? 0.0f : pixel.z;
-                pixel.z = pixel.z > 1.0f ? 1.0f : pixel.z;
+                pixel.x = std::clamp(pixel.x, 0.0f, 1.0f);
+                pixel.y = std::clamp(pixel.y, 0.0f, 1.0f);
+                pixel.z = std::clamp(pixel.z, 0.0f, 1.0f);
 
                 uint8_t ir = static_cast<uint8_t>(255.999f * pixel.x);
                 uint8_t ig = static_cast<uint8_t>(255.999f * pixel.y);
@@ -99,86 +97,8 @@ public:
 
         std::cout << std::endl;
     }
-    // void parallel_subroutine(const BVH &bvh, const World &world, const int32_t h, const int32_t w, const int32_t start, const int32_t end, glm::vec3 *ret){
-    //     glm::vec3 pixel(0.0, 0.0, 0.0);
-    //     for (int32_t s = start; s < end && s < samples; ++s) {
-    //         Ray r = this->get_ray(h, w);
-    //         glm::vec3 sampled = get_color(bvh, world, r, 50);
-    //         pixel += sampled;
-    //     }
-    //     *ret = pixel;
-    // }
-
-
-    // void parallel_render(std::vector<uint8_t> &image, const BVH& bvh, const World& world) {
-    //     glm::vec3 ret[NUM_PROCESS];
-    //     std::thread workers[NUM_PROCESS];
-    //     for (int32_t h = 0; h < height; ++h) {
-    //         for (int32_t w = 0; w < width; ++w) {
-    //             std::clog << "\rPixels remaining: " << h * width + w << " out of " << height * width << std::flush;
-
-    //             glm::vec3 pixel(0.0, 0.0, 0.0);
-
-    //             if (true) {
-    //                 for(int32_t p=0; p<NUM_PROCESS; p++){
-    //                     workers[p] = (std::thread(
-    //                         &PerspectiveCamera::parallel_subroutine, 
-    //                         this, 
-    //                         bvh, 
-    //                         world, 
-    //                         h, 
-    //                         w,
-    //                         (samples/NUM_PROCESS)*p,
-    //                         (samples/NUM_PROCESS)*(p+1),
-    //                         &ret[p]
-    //                     ));
-    //                 }
-    //                 for(int32_t p=0; p<NUM_PROCESS; p++){
-    //                     workers[p].join();
-    //                 }
-    //                 // std::cout << "worker all end" << std::endl;
-    //                 for(int32_t p=0; p<NUM_PROCESS; p++){
-    //                     pixel += ret[p];
-    //                 }
-
-    //                 pixel /= samples;
-    //             } else {
-    //                 pixel.x = 0.0f;
-    //                 pixel.y = 1.0f;
-    //                 pixel.z = 0.0f;
-    //             }
-
-    //             // linear to gamma
-    //             pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
-    //             pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
-    //             pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
-
-    //             // clamp
-    //             pixel.x = pixel.x < 0.0f ? 0.0f : pixel.x;
-    //             pixel.x = pixel.x > 1.0f ? 1.0f : pixel.x;
-    //             pixel.y = pixel.y < 0.0f ? 0.0f : pixel.y;
-    //             pixel.y = pixel.y > 1.0f ? 1.0f : pixel.y;
-    //             pixel.z = pixel.z < 0.0f ? 0.0f : pixel.z;
-    //             pixel.z = pixel.z > 1.0f ? 1.0f : pixel.z;
-
-    //             uint8_t ir = static_cast<uint8_t>(255.999f * pixel.x);
-    //             uint8_t ig = static_cast<uint8_t>(255.999f * pixel.y);
-    //             uint8_t ib = static_cast<uint8_t>(255.999f * pixel.z);
-
-    //             image[h * width * 4 + w * 4 + 0] = ir;
-    //             image[h * width * 4 + w * 4 + 1] = ig;
-    //             image[h * width * 4 + w * 4 + 2] = ib;
-    //             image[h * width * 4 + w * 4 + 3] = 255;
-    //         }
-    //     }
-
-    //     std::cout << std::endl;
-    // }
-
 
     Ray get_ray(int32_t h, int32_t w) {
-        // float random_h = std::rand() / (RAND_MAX + 1.0f) - 0.5f;
-        // float random_w = std::rand() / (RAND_MAX + 1.0f) - 0.5f;
         float random_h = static_cast<float>(h) + random_float();
         float random_w = static_cast<float>(w) + random_float();
         glm::vec3 origin;

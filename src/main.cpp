@@ -14,15 +14,16 @@
 #include <material.h>
 #include <bvh.h>
 #include <sphere.h>
+#include <texture.h>
 
-int main(int argc, char *argv[]) {
+int32_t main(int32_t argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
 
     std::string filename = "output.png";
 
     // image
-    int32_t width = 1200/16;
-    int32_t height = 675/16;
+    int32_t width = 1200/2;
+    int32_t height = 675/2;
     // int32_t width = 2560;
     // int32_t height = 1440;
     std::vector<uint8_t> image(height * width * 4); // rgba
@@ -55,54 +56,61 @@ int main(int argc, char *argv[]) {
     // materials
     World world;
 
-    std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.5, 0.5, 0.5));
-    Sphere sphere_ground(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
-    world.add(sphere_ground);
+    if (true) {
+        std::shared_ptr<ImageTexture> earth_texture = std::make_shared<ImageTexture>("data/earthmap.png");
+        std::shared_ptr<CheckerTexture> checker = std::make_shared<CheckerTexture>(0.32, glm::vec3(0.2, 0.3, 0.1), glm::vec3(0.9, 0.9, 0.9));
+        
+        // std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.5, 0.5, 0.5));
+        std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(checker);
+        Sphere sphere_ground(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
+        world.add(sphere_ground);
 
-    std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
-    std::shared_ptr<Material> material2 = std::make_shared<Lambertian>(glm::vec3(0.4, 0.2, 0.1));
-    std::shared_ptr<Material> material3 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
-    Sphere sphere1(glm::vec3( 0.0, 1.0, 0.0), 1.0, material1);
-    Sphere sphere2(glm::vec3( -4.0, 1.0, 0.0), 1.0, material2);
-    Sphere sphere3(glm::vec3( 4.0, 1.0, 0.0), 1.0, material3);
-    world.add(sphere1);
-    world.add(sphere2);
-    world.add(sphere3);
+        std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
+        std::shared_ptr<Material> material2 = std::make_shared<Lambertian>(earth_texture);
+        std::shared_ptr<Material> material3 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
+        Sphere sphere1(glm::vec3( 0.0, 1.0, 0.0), 1.0, material1);
+        Sphere sphere2(glm::vec3( -4.0, 1.0, 0.0), 1.0, material2);
+        Sphere sphere3(glm::vec3( 4.0, 1.0, 0.0), 1.0, material3);
+        world.add(sphere1);
+        world.add(sphere2);
+        world.add(sphere3);
 
-    for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
-        for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
-            float material_choice = random_float();
+        for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
+            for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
+                float material_choice = random_float();
 
-            glm::vec3 center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
+                glm::vec3 center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
 
-            if (glm::length(center - glm::vec3(4, 0.2, 0.0)) > 0.9f) {
-                std::shared_ptr<Material> material;
+                if (glm::length(center - glm::vec3(4, 0.2, 0.0)) > 0.9f) {
+                    std::shared_ptr<Material> material;
 
-                if (material_choice < 0.8f) {
-                    // diffuse
-                    glm::vec3 albedo = glm::vec3(random_float() * random_float(), random_float() * random_float(), random_float() * random_float());
-                    material = std::make_shared<Lambertian>(albedo);
-                } else if (material_choice < 0.95f) {
-                    // metal
-                    glm::vec3 albedo = glm::vec3(0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float());
-                    float fuzz = random_float() * 0.5f;
-                    material = std::make_shared<Metal>(albedo, fuzz);
-                } else {
-                    // dielectric
-                    material = std::make_shared<Dielectric>(1.5f);
+                    if (material_choice < 0.8f) {
+                        // diffuse
+                        glm::vec3 albedo = glm::vec3(random_float() * random_float(), random_float() * random_float(), random_float() * random_float());
+                        material = std::make_shared<Lambertian>(albedo);
+                    } else if (material_choice < 0.95f) {
+                        // metal
+                        glm::vec3 albedo = glm::vec3(0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float());
+                        float fuzz = random_float() * 0.5f;
+                        material = std::make_shared<Metal>(albedo, fuzz);
+                    } else {
+                        // dielectric
+                        material = std::make_shared<Dielectric>(1.5f);
+                    }
+                    Sphere sphere(center, 0.2, material);
+                    world.add(sphere);
                 }
-                Sphere sphere(center, 0.2, material);
-                world.add(sphere);
             }
         }
     }
+
     BVH bvh(world);
 
     // render
     perspectiveCamera.render(image, bvh, world);
     // perspectiveCamera.parallel_render(image, bvh, world);
 
-    unsigned int error = lodepng::encode(filename, image, width, height);
+    uint32_t error = lodepng::encode(filename, image, width, height);
     if (error) {
         std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
     }
