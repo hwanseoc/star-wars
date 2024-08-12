@@ -14,7 +14,76 @@
 #include <material.h>
 #include <bvh.h>
 #include <sphere.h>
+#include <triangle.h>
 #include <texture.h>
+
+
+void build_world1(World &world) {
+    std::shared_ptr<ImageTexture> earth_texture = std::make_shared<ImageTexture>("data/earthmap.png");
+    std::shared_ptr<CheckerTexture> checker = std::make_shared<CheckerTexture>(0.32, glm::vec3(0.2, 0.3, 0.1), glm::vec3(0.9, 0.9, 0.9));
+
+    std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(checker);
+    Sphere sphere_ground(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
+    world.add(sphere_ground);
+
+    std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
+    std::shared_ptr<Material> material2 = std::make_shared<Lambertian>(earth_texture);
+    std::shared_ptr<Material> material3 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
+    Sphere sphere1(glm::vec3(0.0, 1.0, 0.0), 1.0, material1);
+    Sphere sphere2(glm::vec3(-4.0, 1.0, 0.0), 1.0, material2);
+    Sphere sphere3(glm::vec3(4.0, 1.0, 0.0), 1.0, material3);
+    world.add(sphere1);
+    world.add(sphere2);
+    world.add(sphere3);
+
+    for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
+        for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
+            float material_choice = random_float();
+
+            glm::vec3 center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
+
+            if (glm::length(center - glm::vec3(4, 0.2, 0.0)) > 0.9f) {
+                std::shared_ptr<Material> material;
+
+                if (material_choice < 0.8f) {
+                    // diffuse
+                    glm::vec3 albedo = glm::vec3(random_float() * random_float(), random_float() * random_float(), random_float() * random_float());
+                    material = std::make_shared<Lambertian>(albedo);
+                } else if (material_choice < 0.95f) {
+                    // metal
+                    glm::vec3 albedo = glm::vec3(0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float());
+                    float fuzz = random_float() * 0.5f;
+                    material = std::make_shared<Metal>(albedo, fuzz);
+                } else {
+                    // dielectric
+                    material = std::make_shared<Dielectric>(1.5f);
+                }
+                Sphere sphere(center, 0.2, material);
+                world.add(sphere);
+            }
+        }
+    }
+}
+
+void build_world2(World &world){
+    std::shared_ptr<ImageTexture> earth_texture = std::make_shared<ImageTexture>("data/earthmap.png");
+    std::shared_ptr<CheckerTexture> checker = std::make_shared<CheckerTexture>(0.32, glm::vec3(0.2, 0.3, 0.1), glm::vec3(0.9, 0.9, 0.9));
+    std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(checker);
+    Sphere sphere_ground(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
+    world.add(sphere_ground);
+
+    // std::shared_ptr<Material> material_triangle = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.0f, 0.0f));
+    // std::shared_ptr<Material> material_triangle = std::make_shared<Lambertian>(earth_texture);
+    std::shared_ptr<Material> material_triangle = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
+    Triangle triangle(
+        glm::vec3(0.0, 1.0, 8.0),
+        glm::vec3(1.0, 1.0, 8.0),
+        glm::vec3(0.0, 2.0, 8.0),
+        material_triangle
+    );
+    world.add(triangle);
+}
+
 
 int32_t main(int32_t argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
@@ -22,22 +91,22 @@ int32_t main(int32_t argc, char *argv[]) {
     std::string filename = "output.png";
 
     // image
-    int32_t width = 1200/2;
-    int32_t height = 675/2;
+    int32_t width = 1200/6;
+    int32_t height = 675/6;
     // int32_t width = 2560;
     // int32_t height = 1440;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // camera
-    glm::vec3 center(13.0, 2.0, 3.0);
-    glm::vec3 direction(-13.0, -2.0, -3.0);
+    glm::vec3 center(0.0, 1.0, 13.0);
+    glm::vec3 direction(0.0, 0.0, -13.0);
     direction = glm::normalize(direction);
     glm::vec3 up(0.0, 1.0, 0.0);
     //float fov = 90.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
     float fov = 0.607537f;
-    int32_t samples = 500;
+    int32_t samples = 100;
     int32_t max_depth = 50;
-    float focal_distance = 10.0f;
+    float focal_distance = 7.0f;
     float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
 
     PerspectiveCamera perspectiveCamera(
@@ -55,55 +124,7 @@ int32_t main(int32_t argc, char *argv[]) {
 
     // materials
     World world;
-
-    if (true) {
-        std::shared_ptr<ImageTexture> earth_texture = std::make_shared<ImageTexture>("data/earthmap.png");
-        std::shared_ptr<CheckerTexture> checker = std::make_shared<CheckerTexture>(0.32, glm::vec3(0.2, 0.3, 0.1), glm::vec3(0.9, 0.9, 0.9));
-        
-        // std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(glm::vec3(0.5, 0.5, 0.5));
-        std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(checker);
-        Sphere sphere_ground(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
-        world.add(sphere_ground);
-
-        std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
-        std::shared_ptr<Material> material2 = std::make_shared<Lambertian>(earth_texture);
-        std::shared_ptr<Material> material3 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
-        Sphere sphere1(glm::vec3( 0.0, 1.0, 0.0), 1.0, material1);
-        Sphere sphere2(glm::vec3( -4.0, 1.0, 0.0), 1.0, material2);
-        Sphere sphere3(glm::vec3( 4.0, 1.0, 0.0), 1.0, material3);
-        world.add(sphere1);
-        world.add(sphere2);
-        world.add(sphere3);
-
-        for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
-            for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
-                float material_choice = random_float();
-
-                glm::vec3 center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
-
-                if (glm::length(center - glm::vec3(4, 0.2, 0.0)) > 0.9f) {
-                    std::shared_ptr<Material> material;
-
-                    if (material_choice < 0.8f) {
-                        // diffuse
-                        glm::vec3 albedo = glm::vec3(random_float() * random_float(), random_float() * random_float(), random_float() * random_float());
-                        material = std::make_shared<Lambertian>(albedo);
-                    } else if (material_choice < 0.95f) {
-                        // metal
-                        glm::vec3 albedo = glm::vec3(0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float());
-                        float fuzz = random_float() * 0.5f;
-                        material = std::make_shared<Metal>(albedo, fuzz);
-                    } else {
-                        // dielectric
-                        material = std::make_shared<Dielectric>(1.5f);
-                    }
-                    Sphere sphere(center, 0.2, material);
-                    world.add(sphere);
-                }
-            }
-        }
-    }
-
+    build_world2(world);
     BVH bvh(world);
 
     // render
@@ -119,3 +140,5 @@ int32_t main(int32_t argc, char *argv[]) {
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
 }
+
+

@@ -121,11 +121,11 @@ public:
             return glm::vec3(0.0, 0.0, 0.0);
         }
 
-        BVHHit bvh_hit = bvh.hit(world, r, 0.001f, 1000.0f);
+        BVHHit bvh_hit = bvh.hit(world, r, 0.001f, std::numeric_limits<float>::max());
 
         if (bvh_hit.is_hit) {
             Object *obj = bvh_hit.obj;
-            ColorHit hit = obj->hit(bvh_hit, r, 0.001f, 1000.0f);
+            ColorHit hit = obj->hit(bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
 
             // bool is_scatter, glm::vec3 attenuation, Ray ray_scatter
             const auto& [is_scatter, attenuation, ray_scatter] = hit.mat->scatter(r, hit);

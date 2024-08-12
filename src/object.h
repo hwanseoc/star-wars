@@ -32,7 +32,19 @@ public:
 
     AABB() : box_aa(0.0f, 0.0f, 0.0f), box_bb(0.0f, 0.0f, 0.0f) {}
 
-    AABB(const glm::vec3 &box_aa, const glm::vec3 &box_bb) : box_aa(box_aa), box_bb(box_bb) {}
+    AABB(const glm::vec3 &box_aa_, const glm::vec3 &box_bb_) {
+        constexpr float delta = 0.0001f;
+        for (int32_t i = 0; i < 3; ++i){
+            float dif = box_bb_[i] - box_aa_[i];
+            if (dif < delta) {
+                box_aa[i] = box_aa_[i] - delta;
+                box_bb[i] = box_bb_[i] + delta;
+            } else {
+                box_aa[i] = box_aa_[i];
+                box_bb[i] = box_bb_[i];
+            }
+        }
+    }
 
     AABB(const AABB &box0, const AABB &box1) {
         for (int32_t i = 0; i < 3; ++i){
