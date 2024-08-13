@@ -2,11 +2,18 @@
 #include <memory>
 #include <cmath>
 #include <numbers>
-#include <ctime>
 #include <chrono>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 #include <lodepng.h>
 #include <glm/glm.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/transform.hpp>
+
+
 
 #include <ray.h>
 #include <camera.h>
@@ -17,6 +24,52 @@
 #include <triangle.h>
 #include <texture.h>
 
+void add_object(
+    World &world,
+    const std::string &filename,
+    const glm::vec3 &translate,
+    const glm::vec3 &scale,
+    std::shared_ptr<Material> &material
+) {
+    std::vector<glm::vec3> vertices;
+
+    std::ifstream f(filename);
+
+    std::string line;
+    while (getline(f, line)) {
+        std::istringstream iss(line);
+        std::string type;
+        iss >> type;
+        if (type == "v") {
+            glm::vec3 v;
+            iss >> v.x >> v.y >> v.z;
+            vertices.push_back(v);
+        } else if (type == "f") {
+            int32_t f[3];
+            iss >> f[0] >> f[1] >> f[2];
+
+            glm::mat4 transform_matrix = glm::mat4(1.0f);
+            transform_matrix = glm::translate(transform_matrix, translate);
+            transform_matrix = glm::rotate(transform_matrix, 90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+            transform_matrix = glm::scale(transform_matrix, scale);
+
+            auto apply_transform = [&](const glm::vec3& vertex) -> glm::vec3 {
+                glm::vec4 transformed_vertex = transform_matrix * glm::vec4(vertex, 1.0f);
+                return glm::vec3(transformed_vertex); // Convert back to 3D vector
+            };
+
+            Triangle triangle(
+                apply_transform(vertices[f[0]-1]),
+                apply_transform(vertices[f[1]-1]),
+                apply_transform(vertices[f[2]-1]),
+                material
+            );
+            world.add(triangle);
+        } else {
+            std::cout << "object parser error" << std::endl;
+        }
+    }
+}
 
 void build_world1(World &world) {
     std::shared_ptr<ImageTexture> earth_texture = std::make_shared<ImageTexture>("data/earthmap.png");
@@ -65,7 +118,7 @@ void build_world1(World &world) {
     }
 }
 
-void build_world2(World &world){
+void build_world2(World &world) {
     std::shared_ptr<ImageTexture> earth_texture = std::make_shared<ImageTexture>("data/earthmap.png");
     std::shared_ptr<CheckerTexture> checker = std::make_shared<CheckerTexture>(0.32, glm::vec3(0.2, 0.3, 0.1), glm::vec3(0.9, 0.9, 0.9));
     std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(checker);
@@ -75,38 +128,100 @@ void build_world2(World &world){
     // std::shared_ptr<Material> material_triangle = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.0f, 0.0f));
     // std::shared_ptr<Material> material_triangle = std::make_shared<Lambertian>(earth_texture);
     std::shared_ptr<Material> material_triangle = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
-    Triangle triangle(
-        glm::vec3(0.0, 1.0, 8.0),
-        glm::vec3(1.0, 1.0, 8.0),
-        glm::vec3(0.0, 2.0, 8.0),
-        material_triangle
-    );
-    world.add(triangle);
+    // Triangle triangle(
+    //     glm::vec3(0.0, 1.0, 8.0),
+    //     glm::vec3(1.0, 1.0, 8.0),
+    //     glm::vec3(0.0, 2.0, 8.2),
+    //     material_triangle
+    // );
+    // world.add(triangle);
+
+    add_object(world, "data/dragon.obj", glm::vec3(0.0, 3.0, 8.0), glm::vec3(5.0, 5.0, 5.0), material_triangle);
 }
 
+void build_world3(World &world) {
+    std::shared_ptr<CheckerTexture> checker = std::make_shared<CheckerTexture>(0.32, glm::vec3(0.2, 0.3, 0.1), glm::vec3(0.9, 0.9, 0.9));
+    std::shared_ptr<Material> material_left = std::make_shared<Lambertian>(glm::vec3(0.8, 0.0, 0.0));
+    std::shared_ptr<Material> material_right = std::make_shared<Lambertian>(glm::vec3(0.0, 0.0, 0.8));
+    std::shared_ptr<Material> material_up = std::make_shared<Lambertian>(checker);
+    std::shared_ptr<Material> material_down = std::make_shared<Lambertian>(glm::vec3(0.8, 0.0, 0.0));
+    std::shared_ptr<Material> material_center = std::make_shared<Lambertian>(glm::vec3(0.8, 0.0, 0.0));
+
+    Triangle triangle_left1(
+        glm::vec3(-6.0, -4.0, 4.0),
+        glm::vec3(-6.0, -4.0, -4.0),
+        glm::vec3(-6.0, 4.0, 4.0),
+        material_left
+    );
+    world.add(triangle_left1);
+
+    Triangle triangle_left2(
+        glm::vec3(-6.0, -4.0, -4.0),
+        glm::vec3(-6.0, 4.0, -4.0),
+        glm::vec3(-6.0, 4.0, 4.0),
+        material_left
+    );
+    world.add(triangle_left2);
+
+
+    Triangle triangle_right1(
+        glm::vec3(6.0, -4.0, 4.0),
+        glm::vec3(6.0, 4.0, 4.0),
+        glm::vec3(6.0, -4.0, -4.0),
+        material_right
+    );
+    world.add(triangle_right1);
+
+    Triangle triangle_right2(
+        glm::vec3(6.0, -4.0, -4.0),
+        glm::vec3(6.0, 4.0, 4.0),
+        glm::vec3(6.0, 4.0, -4.0),
+        material_right
+    );
+    world.add(triangle_right2);
+
+
+    Triangle triangle_down1(
+        glm::vec3(-4.0, 6.0, 4.0),
+        glm::vec3(4.0, 6.0, 4.0),
+        glm::vec3(-4.0, 6.0, -4.0),
+        material_down
+    );
+    world.add(triangle_down1);
+
+    Triangle triangle_down2(
+        glm::vec3(4.0, 6.0, 4.0),
+        glm::vec3(4.0, 6.0, -4.0),
+        glm::vec3(-4.0, 6.0, -4.0),
+        material_down
+    );
+    world.add(triangle_down2);
+}
 
 int32_t main(int32_t argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
 
     std::string filename = "output.png";
 
+    // TODO move image and camera to build_world
+
     // image
-    int32_t width = 1200/6;
-    int32_t height = 675/6;
+    int32_t width = 1200/8;
+    int32_t height = 675/8;
     // int32_t width = 2560;
     // int32_t height = 1440;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // camera
-    glm::vec3 center(0.0, 1.0, 13.0);
+    glm::vec3 center(0.0, 2.5, 13.0);
     glm::vec3 direction(0.0, 0.0, -13.0);
     direction = glm::normalize(direction);
     glm::vec3 up(0.0, 1.0, 0.0);
-    //float fov = 90.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
-    float fov = 0.607537f;
-    int32_t samples = 100;
-    int32_t max_depth = 50;
-    float focal_distance = 7.0f;
+    float fov = 80.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
+    //float fov = 0.607537f;
+    int32_t samples = 1;
+    int32_t max_depth = 1;
+    float focal_distance = 3.0f;
     float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
 
     PerspectiveCamera perspectiveCamera(
