@@ -100,6 +100,15 @@ public:
     World() {}
 
     ~World() {
+        // std::cout << "World class destructor" << std::endl;
+        // Todo
+        // Major error when multi-thread-processing. Segmentation fault core dumped
+        // for (Object* &obj_ptr : objects) {
+        //     delete obj_ptr;
+        // }
+    }
+
+    void destroyWorld() {
         for (Object* &obj_ptr : objects) {
             delete obj_ptr;
         }

@@ -13,15 +13,10 @@
 #include <bvh.h>
 #include <material.h>
 
-
-#define NUM_PROCESS 8
-
-
 class PerspectiveCamera {
     int32_t height, width, samples, max_depth;
     float focal_distance, defocus_angle;
     glm::vec3 center, pixel00, du, dv, disk_u, disk_v;
-
 public:
     PerspectiveCamera(
         glm::vec3 &center,
@@ -97,6 +92,106 @@ public:
 
         std::cout << std::endl;
     }
+    void multi_thread_render_sub(const BVH& bvh, const World& world, const int32_t num_process, const int32_t worker_id, std::vector<glm::vec3> &ret) {
+        // std::cout << "[Sub]\t\tworker_id:" << worker_id << std::endl;
+        for(int32_t i = worker_id; i < height * width; i += num_process) {
+            // std::cout << "[Sub_for]\t\ti:" << i << " i/num:" << i/num_process <<std::endl;
+
+            int32_t h = i / width;
+            int32_t w = i % width;
+
+            if(worker_id == 0){
+                std::clog << "\r[WorkerId]:" << worker_id << " Pixels processed: " << i/num_process + 1 << " out of " << (height * width + num_process - 1) / num_process << std::flush;
+            }
+
+            glm::vec3 pixel(0.0, 0.0, 0.0);
+
+            for (int32_t s = 0; s < samples; ++s) {
+                Ray r = this->get_ray(h, w);
+                glm::vec3 sampled = get_color(bvh, world, r, 50);
+                pixel += sampled;
+            }
+
+            pixel /= samples;
+
+            // linear to gamma
+            pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
+            pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
+            pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
+
+            // clamp
+            pixel.x = std::clamp(pixel.x, 0.0f, 1.0f);
+            pixel.y = std::clamp(pixel.y, 0.0f, 1.0f);
+            pixel.z = std::clamp(pixel.z, 0.0f, 1.0f);
+
+            ret[i/num_process] = pixel;
+        }
+    }
+
+
+    //TODO:
+    // delete inter variable ret and replace with image
+    void multi_thread_render(std::vector<uint8_t> &image, const BVH& bvh, const World& world, const int32_t num_process) {
+        std::vector<std::vector<glm::vec3>> ret;
+        std::vector<std::thread> process;
+
+        int32_t ret_size = (height * width + num_process - 1) / num_process;
+
+        ret.resize(num_process);
+        for(int32_t p = 0; p < num_process; ++p) {
+            ret[p].resize(ret_size);
+        }
+        process.resize(num_process);
+
+        // std::cout << "started multi-thread-render" << std::endl;
+        // std::cout << "num_process " << num_process << std::endl;
+        // std::cout << "height " << height << std::endl;
+        // std::cout << "width " << width << std::endl;
+        // std::cout << "ret_size " << ret_size << std::endl;
+
+        for(int32_t p = 0; p < num_process; ++p) {
+            // std::cout << "[Thread]\tworker_id:"<< p2 << std::endl;
+            process[p] = std::thread(
+                &PerspectiveCamera::multi_thread_render_sub,
+                this,
+                bvh,
+                world,
+                num_process,
+                p,
+                std::ref(ret[p])
+            );
+            // std::cout << "[Thread end]\tworker_id:"<< p2 << std::endl;
+        }
+
+        for(int32_t p = 0; p < num_process; ++p) {
+            // std::cout << "[Join]\tworker_id:"<< p3 << std::endl;
+            process[p].join();
+        }
+
+        // std::cout << "ended join" << std::endl;
+
+        for(int32_t h = 0; h < height; ++h) {
+            for(int32_t w = 0; w < width; ++w) {
+                int32_t worker_id = (h * width + w) % num_process;
+
+                glm::vec3 pixel = ret[worker_id][(h * width + w)/num_process];
+
+                uint8_t ir = static_cast<uint8_t>(255.999f * pixel.x);
+                uint8_t ig = static_cast<uint8_t>(255.999f * pixel.y);
+                uint8_t ib = static_cast<uint8_t>(255.999f * pixel.z);
+
+                image[h * width * 4 + w * 4 + 0] = ir;
+                image[h * width * 4 + w * 4 + 1] = ig;
+                image[h * width * 4 + w * 4 + 2] = ib;
+                image[h * width * 4 + w * 4 + 3] = 255;
+            }
+        }
+
+        std::cout << std::endl << "ended multi-thread-render" << std::endl;
+    }
+
+
+
 
     Ray get_ray(int32_t h, int32_t w) {
         float random_h = static_cast<float>(h) + random_float();
@@ -141,3 +236,5 @@ public:
         return (1.0f - alpha) * glm::vec3(1.0, 1.0, 1.0) + alpha * glm::vec3(0.5, 0.7, 1.0);
     }
 };
+
+

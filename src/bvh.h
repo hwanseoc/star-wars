@@ -17,6 +17,7 @@ class BVH {
     int64_t root = -1;
 
 public:
+    BVH() {}
     BVH(World &w) {
         std::vector<Object*> &objects = w.get_objects();
 
@@ -100,7 +101,7 @@ private:
         if (node.is_leaf) {
             Object* object = node.obj;
 
-            BVHHit bvhhit = object->bvh_hit(r, tmin, tmax);
+            bvhhit = object->bvh_hit(r, tmin, tmax);
 
             if (bvhhit.is_hit){
                 bvhhit.obj = object;
