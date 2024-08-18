@@ -49,7 +49,7 @@ public:
     void render(std::vector<uint8_t> &image, const BVH& bvh, const World& world) {
         for (int32_t h = 0; h < height; ++h) {
             for (int32_t w = 0; w < width; ++w) {
-                std::clog << "\rPixels processed: " << h * width + w + 1 << " out of " << height * width << std::flush;
+                std::clog << "\rPixels processed: " << h * width + w + 1 << " out of " << height * width << " ("  << (h * width + w + 1)*100/(height * width) << "%)"<< std::flush;
 
                 glm::vec3 pixel(0.0, 0.0, 0.0);
 
@@ -101,7 +101,7 @@ public:
             int32_t w = i % width;
 
             if(worker_id == 0){
-                std::clog << "\r[WorkerId]:" << worker_id << " Pixels processed: " << i/num_process + 1 << " out of " << (height * width + num_process - 1) / num_process << std::flush;
+                std::clog << "\r[WorkerId]:" << worker_id << " Pixels processed: " << i/num_process + 1 << " out of " << (height * width + num_process - 1) / num_process << " (" << (i/num_process + 1)*100/((height * width + num_process - 1) / num_process) << "%)"<< std::flush;
             }
 
             glm::vec3 pixel(0.0, 0.0, 0.0);

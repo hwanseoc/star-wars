@@ -151,8 +151,15 @@ void build_world3(World &world) {
     world.add(sphere_ground);
 
 
-    std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(0.9f);
-    add_object(world, "data/dragon.obj", glm::vec3(0.0, 2.0, 0.0), glm::vec3(1.2, 1.2, 1.2), material1);
+    std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
+    std::shared_ptr<Material> material2 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
+    add_object(world, "data/dragon.obj", glm::vec3(3.0, 3.0, 0.0), glm::vec3(2.0, 2.0, 2.0), material1);
+
+    // Triangle triangle_up(glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 3.0), glm::vec3(3.0, 1.0, 0.0), material1);
+    // world.add(triangle_up);
+
+    // Triangle triangle_down(glm::vec3(0.0, 0.8, 0.0), glm::vec3(3.0, 0.8, 0.0), glm::vec3(0.0, 0.8, 3.0), material1);
+    // world.add(triangle_down);
 }
 
 int32_t main(int32_t argc, char *argv[]) {
@@ -163,33 +170,33 @@ int32_t main(int32_t argc, char *argv[]) {
     // TODO move image and camera to build_world
 
     // image
-    int32_t width = 2560/4;
-    int32_t height = 1440/4;
+    int32_t width = 2560;
+    int32_t height = 1440;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // camera
-    // glm::vec3 center(13.0, 2.0, 3.0);
-    // glm::vec3 direction(-13.0, -2.0, -3.0);
-    // direction = glm::normalize(direction);
-    // glm::vec3 up(0.0, 1.0, 0.0);
-    // //float fov = 80.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
-    // float fov = 0.607537f;
-    // int32_t samples = 50;
-    // int32_t max_depth = 25;
-    // float focal_distance = 10.0f;
-    // float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
-
-
-    glm::vec3 center(13.0, 13.0, 3.0);
-    glm::vec3 direction(-13.0, -13.0, -3.0);
+    glm::vec3 center(13.0, 2.0, 3.0);
+    glm::vec3 direction(-13.0, -2.0, -3.0);
     direction = glm::normalize(direction);
     glm::vec3 up(0.0, 1.0, 0.0);
     //float fov = 80.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
     float fov = 0.607537f;
     int32_t samples = 50;
     int32_t max_depth = 25;
-    float focal_distance = 18.0f;
+    float focal_distance = 10.0f;
     float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
+
+
+    // glm::vec3 center(13.0, 13.0, 3.0);
+    // glm::vec3 direction(-13.0, -13.0, -3.0);
+    // direction = glm::normalize(direction);
+    // glm::vec3 up(0.0, 1.0, 0.0);
+    // //float fov = 80.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
+    // float fov = 0.607537f;
+    // int32_t samples = 50;
+    // int32_t max_depth = 25;
+    // float focal_distance = 18.0f;
+    // float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
 
     PerspectiveCamera perspectiveCamera(
         center,
@@ -206,7 +213,7 @@ int32_t main(int32_t argc, char *argv[]) {
 
     // materials
     World world;
-    build_world3(world);
+    build_world1(world);
     BVH bvh(world);
 
     // render

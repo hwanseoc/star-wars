@@ -38,8 +38,10 @@ public:
     ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const override {
         ColorHit ret;
         ret.point = r.at(bvhhit.t);
-        ret.normal = normal;
+        glm::vec3 outward_normal = normal;
         ret.direction = random_hemisphere(ret.normal);
+        ret.is_front = glm::dot(r.direction(), outward_normal) < 0.0f;
+        ret.normal = ret.is_front ? outward_normal : -outward_normal;
         ret.mat = mat;
 
         glm::vec3 edge1 = v2 - v1;
