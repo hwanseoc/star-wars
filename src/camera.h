@@ -52,8 +52,8 @@ public:
             int32_t h = i / width;
             int32_t w = i % width;
 
-            if(worker_id == 0){
-                std::clog << "\r[WorkerId]:" << worker_id << " Pixels processed: " << i/num_process + 1 << " out of " << (height * width + num_process - 1) / num_process << " (" << (i/num_process + 1)*100/((height * width + num_process - 1) / num_process) << "%)"<< std::flush;
+            if (worker_id == 0){
+                std::clog << "\rPixels processed: " << i << " out of " << height * width << std::flush;
             }
 
             glm::vec3 pixel(0.0, 0.0, 0.0);
@@ -94,7 +94,7 @@ public:
 
         for(int32_t p = 0; p < num_process; ++p) {
             process[p] = std::thread(
-                &PerspectiveCamera::multi_thread_render_sub,
+                &PerspectiveCamera::render_subroutine,
                 this,
                 bvh,
                 world,
@@ -107,8 +107,6 @@ public:
         for(int32_t p = 0; p < num_process; ++p) {
             process[p].join();
         }
-
-        // std::cout << "ended join" << std::endl;
 
         for(int32_t h = 0; h < height; ++h) {
             for(int32_t w = 0; w < width; ++w) {
@@ -126,12 +124,7 @@ public:
                 image[h * width * 4 + w * 4 + 3] = 255;
             }
         }
-
-        std::cout << std::endl << "ended multi-thread-render" << std::endl;
     }
-
-
-
 
     Ray get_ray(int32_t h, int32_t w) {
         float random_h = static_cast<float>(h) + random_float();
@@ -176,5 +169,3 @@ public:
         return (1.0f - alpha) * glm::vec3(1.0, 1.0, 1.0) + alpha * glm::vec3(0.5, 0.7, 1.0);
     }
 };
-
-
