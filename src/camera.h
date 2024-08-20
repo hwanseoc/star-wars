@@ -17,6 +17,7 @@ class PerspectiveCamera {
     int32_t height, width, samples, max_depth;
     float focal_distance, defocus_angle;
     glm::vec3 center, pixel00, du, dv, disk_u, disk_v;
+
 public:
     PerspectiveCamera(
         glm::vec3 &center,
@@ -46,57 +47,8 @@ public:
                     - dv * (heightf / 2.0f);
     }
 
-    void render(std::vector<uint8_t> &image, const BVH& bvh, const World& world) {
-        for (int32_t h = 0; h < height; ++h) {
-            for (int32_t w = 0; w < width; ++w) {
-                std::clog << "\rPixels processed: " << h * width + w + 1 << " out of " << height * width << std::flush;
-
-                glm::vec3 pixel(0.0, 0.0, 0.0);
-
-                if (true) {
-                // if (h == 50 && w == 200) {
-                //if (h >= 500 && h < 501 && w >= 200 && w < 210) {
-                    for (int32_t s = 0; s < samples; ++s) {
-                        Ray r = this->get_ray(h, w);
-                        glm::vec3 sampled = get_color(bvh, world, r, 50);
-                        pixel += sampled;
-                    }
-
-                    pixel /= samples;
-                } else {
-                    pixel.x = 0.0f;
-                    pixel.y = 1.0f;
-                    pixel.z = 0.0f;
-                }
-
-                // linear to gamma
-                pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
-                pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
-                pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
-
-                // clamp
-                pixel.x = std::clamp(pixel.x, 0.0f, 1.0f);
-                pixel.y = std::clamp(pixel.y, 0.0f, 1.0f);
-                pixel.z = std::clamp(pixel.z, 0.0f, 1.0f);
-
-                uint8_t ir = static_cast<uint8_t>(255.999f * pixel.x);
-                uint8_t ig = static_cast<uint8_t>(255.999f * pixel.y);
-                uint8_t ib = static_cast<uint8_t>(255.999f * pixel.z);
-
-                image[h * width * 4 + w * 4 + 0] = ir;
-                image[h * width * 4 + w * 4 + 1] = ig;
-                image[h * width * 4 + w * 4 + 2] = ib;
-                image[h * width * 4 + w * 4 + 3] = 255;
-            }
-        }
-
-        std::cout << std::endl;
-    }
-    void multi_thread_render_sub(const BVH& bvh, const World& world, const int32_t num_process, const int32_t worker_id, std::vector<glm::vec3> &ret) {
-        // std::cout << "[Sub]\t\tworker_id:" << worker_id << std::endl;
-        for(int32_t i = worker_id; i < height * width; i += num_process) {
-            // std::cout << "[Sub_for]\t\ti:" << i << " i/num:" << i/num_process <<std::endl;
-
+    void render_subroutine(const BVH& bvh, const World& world, const int32_t num_process, const int32_t worker_id, std::vector<glm::vec3> &ret) {
+        for (int32_t i = worker_id; i < height * width; i += num_process) {
             int32_t h = i / width;
             int32_t w = i % width;
 
@@ -128,10 +80,7 @@ public:
         }
     }
 
-
-    //TODO:
-    // delete inter variable ret and replace with image
-    void multi_thread_render(std::vector<uint8_t> &image, const BVH& bvh, const World& world, const int32_t num_process) {
+    void render(std::vector<uint8_t> &image, const BVH& bvh, const World& world, const int32_t num_process) {
         std::vector<std::vector<glm::vec3>> ret;
         std::vector<std::thread> process;
 
@@ -143,14 +92,7 @@ public:
         }
         process.resize(num_process);
 
-        // std::cout << "started multi-thread-render" << std::endl;
-        // std::cout << "num_process " << num_process << std::endl;
-        // std::cout << "height " << height << std::endl;
-        // std::cout << "width " << width << std::endl;
-        // std::cout << "ret_size " << ret_size << std::endl;
-
         for(int32_t p = 0; p < num_process; ++p) {
-            // std::cout << "[Thread]\tworker_id:"<< p2 << std::endl;
             process[p] = std::thread(
                 &PerspectiveCamera::multi_thread_render_sub,
                 this,
@@ -160,11 +102,9 @@ public:
                 p,
                 std::ref(ret[p])
             );
-            // std::cout << "[Thread end]\tworker_id:"<< p2 << std::endl;
         }
 
         for(int32_t p = 0; p < num_process; ++p) {
-            // std::cout << "[Join]\tworker_id:"<< p3 << std::endl;
             process[p].join();
         }
 
