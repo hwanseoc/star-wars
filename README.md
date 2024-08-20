@@ -1,4 +1,4 @@
-# Ray Tracer written from scratch
+# Ray Tracer from Scratch
 
 ![render.png](/render.png)
 
