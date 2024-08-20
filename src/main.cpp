@@ -35,10 +35,10 @@ void add_object(
 ) {
     std::vector<glm::vec3> vertices;
 
-    std::ifstream f(filename);
+    std::ifstream ifs(filename);
 
     std::string line;
-    while (getline(f, line)) {
+    while (getline(ifs, line)) {
         std::istringstream iss(line);
         std::string type;
         iss >> type;

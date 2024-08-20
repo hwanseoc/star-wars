@@ -3,15 +3,12 @@
 #include <glm/glm.hpp>
 
 class Ray {
-    glm::vec3 origin_;
-    glm::vec3 direction_;
-
 public:
+    glm::vec3 origin;
+    glm::vec3 direction;
+
     Ray() {}
-    Ray(const glm::vec3 &origin, const glm::vec3 &direction) : origin_(origin), direction_(direction) {}
+    Ray(const glm::vec3 &origin, const glm::vec3 &direction) : origin(origin), direction(direction) {}
 
-    const glm::vec3 &origin() const { return origin_; }
-    const glm::vec3 &direction() const { return direction_; }
-
-    glm::vec3 at(float t) const { return origin_ + direction_ * t; }
+    glm::vec3 at(float t) const { return origin + direction * t; }
 };

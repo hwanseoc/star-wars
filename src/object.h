@@ -54,8 +54,8 @@ public:
     }
 
     bool hit(const Ray &r, float tmin, float tmax) const {
-        const glm::vec3 &origin = r.origin();
-        const glm::vec3 &direction = r.direction();
+        const glm::vec3 &origin = r.origin;
+        const glm::vec3 &direction = r.direction;
 
         for (int32_t i = 0; i < 3; ++i) {
             float inverse_direction = 1.0f / direction[i];

@@ -39,19 +39,19 @@ public:
         ColorHit ret;
         ret.point = r.at(bvhhit.t);
         ret.direction = random_hemisphere(ret.normal);
-        ret.is_front = glm::dot(r.direction(), normal) < 0.0f;
+        ret.is_front = glm::dot(r.direction, normal) < 0.0f;
         ret.normal = ret.is_front ? normal : -normal;
         ret.mat = mat;
 
         glm::vec3 edge1 = v2 - v1;
         glm::vec3 edge2 = v3 - v1;
-        glm::vec3 ray_cross_edge2 = glm::cross(r.direction(), edge2);
+        glm::vec3 ray_cross_edge2 = glm::cross(r.direction, edge2);
         float det = glm::dot(edge1, ray_cross_edge2);
         float inv_det = 1.0f / det;
-        glm::vec3 s = r.origin() - v1;
+        glm::vec3 s = r.origin - v1;
         glm::vec3 q = glm::cross(s, edge1);
         float u = inv_det * glm::dot(s, ray_cross_edge2);
-        float v = inv_det * glm::dot(r.direction(), q);
+        float v = inv_det * glm::dot(r.direction, q);
 
         ret.u = u;
         ret.v = v;
@@ -65,7 +65,7 @@ public:
 
         glm::vec3 edge1 = v2 - v1;
         glm::vec3 edge2 = v3 - v1;
-        glm::vec3 ray_cross_edge2 = glm::cross(r.direction(), edge2);
+        glm::vec3 ray_cross_edge2 = glm::cross(r.direction, edge2);
         float det = glm::dot(edge1, ray_cross_edge2);
 
         // the ray is parallel to the triangle.
@@ -74,7 +74,7 @@ public:
         }
 
         float inv_det = 1.0f / det;
-        glm::vec3 s = r.origin() - v1;
+        glm::vec3 s = r.origin - v1;
         float u = inv_det * glm::dot(s, ray_cross_edge2);
 
         // the intersection is outside of the triangle.
@@ -83,7 +83,7 @@ public:
         }
 
         glm::vec3 q = glm::cross(s, edge1);
-        float v = inv_det * glm::dot(r.direction(), q);
+        float v = inv_det * glm::dot(r.direction, q);
 
         // the intersection is outside of the triangle.
         if (v < 0.0f || u + v > 1.0f) {

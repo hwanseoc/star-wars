@@ -53,11 +53,11 @@ public:
         const Ray &r,
         const ColorHit &hit
     ) const override {
-        glm::vec3 reflected = reflect(r.direction(), hit.normal);
+        glm::vec3 reflected = reflect(r.direction, hit.normal);
         reflected = glm::normalize(reflected) + random_sphere() * fuzz;
         Ray scattered = Ray(hit.point, glm::normalize(reflected));
         glm::vec3 attenuation = albedo;
-        bool is_scattered = glm::dot(scattered.direction(), hit.normal) > 0;
+        bool is_scattered = glm::dot(scattered.direction, hit.normal) > 0;
         return std::make_tuple(is_scattered, attenuation, scattered);
     }
 
@@ -79,14 +79,14 @@ public:
     ) const override {
         float refractive_index_face = hit.is_front ? (1.0f / refractive_index) : refractive_index;
 
-        float cos_theta = glm::dot(-r.direction(), hit.normal);
+        float cos_theta = glm::dot(-r.direction, hit.normal);
         float sin_theta = std::sqrt(1.0f - cos_theta * cos_theta);
 
         glm::vec3 direction;
         if (refractive_index_face * sin_theta > 1.0f || schlick_reflectance(cos_theta, refractive_index_face) > random_float()) {
-            direction = reflect(r.direction(), hit.normal);
+            direction = reflect(r.direction, hit.normal);
         } else {
-            direction = refract(r.direction(), hit.normal, refractive_index_face);
+            direction = refract(r.direction, hit.normal, refractive_index_face);
         }
 
         return std::make_tuple(true, glm::vec3(1.0, 1.0, 1.0), Ray(hit.point, direction));

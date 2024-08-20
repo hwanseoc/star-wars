@@ -19,7 +19,7 @@ public:
         ColorHit ret;
         ret.point = r.at(bvhhit.t);
         glm::vec3 outward_normal = glm::normalize((ret.point - origin) / radius);
-        ret.is_front = glm::dot(r.direction(), outward_normal) < 0.0f;
+        ret.is_front = glm::dot(r.direction, outward_normal) < 0.0f;
         ret.normal = ret.is_front ? outward_normal : -outward_normal;
         ret.direction = random_hemisphere(ret.normal);
         ret.mat = mat;
@@ -34,9 +34,9 @@ public:
     }
 
     BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const override {
-        glm::vec3 oc = origin - r.origin();
+        glm::vec3 oc = origin - r.origin;
         float a = 1.0f;
-        float h = glm::dot(r.direction(), oc);
+        float h = glm::dot(r.direction, oc);
         float c = oc.x * oc.x + oc.y * oc.y + oc.z * oc.z - radius * radius;
         float discriminant = h * h - a * c;
 
