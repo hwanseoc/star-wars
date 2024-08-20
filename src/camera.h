@@ -158,7 +158,7 @@ public:
             return glm::vec3(0.0, 0.0, 0.0);
         }
 
-        const Object *obj = bvh_hit.obj;
+        const Object* obj = bvh_hit.obj;
         ColorHit hit = obj->hit(bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
 
         // bool is_scatter, glm::vec3 attenuation, Ray ray_scatter
