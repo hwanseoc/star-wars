@@ -99,7 +99,8 @@ class World {
 public:
     World() {}
 
-    ~World() {
+
+    void destroy() {
         for (Object* &obj_ptr : objects) {
             delete obj_ptr;
         }
