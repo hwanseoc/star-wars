@@ -28,6 +28,8 @@ void add_object(
     World &world,
     const std::string &filename,
     const glm::vec3 &translate,
+    const glm::vec3 &rotate_axis,
+    const float rotate_angle,
     const glm::vec3 &scale,
     std::shared_ptr<Material> &material
 ) {
@@ -50,7 +52,7 @@ void add_object(
 
             glm::mat4 transform_matrix = glm::mat4(1.0f);
             transform_matrix = glm::translate(transform_matrix, translate);
-            transform_matrix = glm::rotate(transform_matrix, 90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+            transform_matrix = glm::rotate(transform_matrix, rotate_angle, rotate_axis);
             transform_matrix = glm::scale(transform_matrix, scale);
 
             auto apply_transform = [&](const glm::vec3& vertex) -> glm::vec3 {
@@ -89,7 +91,7 @@ void build_world1(World &world) {
     world.add(sphere1);
     world.add(sphere2);
     // world.add(sphere3);
-    add_object(world, "data/dragon.obj", glm::vec3(4.0, 1.0, 0.0), glm::vec3(1.2, 1.2, 1.2), material1);
+    add_object(world, "data/prism.obj", glm::vec3(4.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 0.0), 180.0f, glm::vec3(0.8, 0.8, 0.8), material1);
     //
     
 
@@ -140,7 +142,7 @@ void build_world2(World &world) {
     // );
     // world.add(triangle);
 
-    add_object(world, "data/dragon.obj", glm::vec3(0.0, 3.0, 8.0), glm::vec3(3.0, 3.0, 3.0), material_triangle);
+    add_object(world, "data/dragon.obj", glm::vec3(0.0, 3.0, 8.0), glm::vec3(0.0, 1.0, 0.0), 90.0f, glm::vec3(3.0, 3.0, 3.0), material_triangle);
 }
 
 void build_world3(World &world) {
@@ -153,7 +155,7 @@ void build_world3(World &world) {
 
     std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
     std::shared_ptr<Material> material2 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
-    add_object(world, "data/dragon.obj", glm::vec3(3.0, 3.0, 0.0), glm::vec3(2.0, 2.0, 2.0), material1);
+    add_object(world, "data/dragon.obj", glm::vec3(3.0, 3.0, 0.0),glm::vec3(0.0, 1.0, 0.0), 90.0f, glm::vec3(2.0, 2.0, 2.0), material1);
 
     // Triangle triangle_up(glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 3.0), glm::vec3(3.0, 1.0, 0.0), material1);
     // world.add(triangle_up);
@@ -170,8 +172,8 @@ int32_t main(int32_t argc, char *argv[]) {
     // TODO move image and camera to build_world
 
     // image
-    int32_t width = 2560;
-    int32_t height = 1440;
+    int32_t width = 2560/4;
+    int32_t height = 1440/4;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // camera
@@ -225,7 +227,7 @@ int32_t main(int32_t argc, char *argv[]) {
         std::cout << "encoder error " << error << ": "<< lodepng_error_text(error) << std::endl;
     }
 
-    world.destroyWorld();
+    world.destroy();
 
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
