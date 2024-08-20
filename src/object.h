@@ -13,7 +13,7 @@ class Object;
 struct BVHHit {
     bool is_hit;
     float t;
-    Object* obj;
+    const Object* obj;
 };
 
 struct ColorHit {
@@ -93,7 +93,7 @@ public:
 };
 
 class World {
-    std::vector<Object*> objects;
+    std::vector<const Object*> objects;
     AABB box_aabb;
 
 public:
@@ -101,7 +101,7 @@ public:
 
 
     void destroy() {
-        for (Object* &obj_ptr : objects) {
+        for (const Object* &obj_ptr : objects) {
             delete obj_ptr;
         }
     }
@@ -119,7 +119,7 @@ public:
         box_aabb = AABB(box_aabb, temp->aabb());
     }
 
-    std::vector<Object*>& get_objects() {
+    const std::vector<const Object*>& get_objects() const {
         return objects;
     }
 };

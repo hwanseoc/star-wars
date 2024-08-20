@@ -20,7 +20,6 @@
 #include <camera.h>
 #include <object.h>
 #include <material.h>
-#include <bvh.h>
 #include <sphere.h>
 #include <triangle.h>
 #include <texture.h>
@@ -222,10 +221,9 @@ int32_t main(int32_t argc, char *argv[]) {
     // materials
     World world;
     build_world1(world);
-    BVH bvh(world);
 
     // render
-    perspectiveCamera.render(image, bvh, world, 16);
+    perspectiveCamera.render(image, world);
 
     uint32_t error = lodepng::encode(filename, image, width, height);
     if (error) {

@@ -80,7 +80,10 @@ public:
         }
     }
 
-    void render(std::vector<uint8_t> &image, const BVH& bvh, const World& world, const int32_t num_process) {
+    void render(std::vector<uint8_t> &image, const World& world) {
+        BVH bvh(world);
+
+        int32_t num_process = std::thread::hardware_concurrency();
         std::vector<std::vector<glm::vec3>> ret;
         std::vector<std::thread> process;
 
@@ -155,7 +158,7 @@ public:
             return glm::vec3(0.0, 0.0, 0.0);
         }
 
-        Object *obj = bvh_hit.obj;
+        const Object *obj = bvh_hit.obj;
         ColorHit hit = obj->hit(bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
 
         // bool is_scatter, glm::vec3 attenuation, Ray ray_scatter

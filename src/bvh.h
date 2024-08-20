@@ -10,7 +10,7 @@ class BVH {
         AABB aabb;
         int64_t left;
         int64_t right;
-        Object* obj;
+        const Object* obj;
     };
 
     std::vector<BVHNode> nodes;
@@ -18,10 +18,10 @@ class BVH {
 
 public:
     BVH() {}
-    BVH(World &w) {
-        std::vector<Object*> &objects = w.get_objects();
+    BVH(const World &w) {
+        const std::vector<const Object*> &objects = w.get_objects();
 
-        for (Object* &obj : objects) {
+        for (const Object* obj : objects) {
             BVHNode node = {
                 .is_leaf = true,
                 .aabb = obj->aabb(),
@@ -99,7 +99,7 @@ private:
 
         // object.hit
         if (node.is_leaf) {
-            Object* object = node.obj;
+            const Object* object = node.obj;
 
             bvhhit = object->bvh_hit(r, tmin, tmax);
 
