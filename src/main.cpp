@@ -219,8 +219,7 @@ int32_t main(int32_t argc, char *argv[]) {
     BVH bvh(world);
 
     // render
-    // perspectiveCamera.render(image, bvh, world);
-    perspectiveCamera.multi_thread_render(image, bvh, world, 16);
+    perspectiveCamera.render(image, bvh, world, 16);
 
     uint32_t error = lodepng::encode(filename, image, width, height);
     if (error) {
