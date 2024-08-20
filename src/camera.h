@@ -151,21 +151,21 @@ public:
 
         BVHHit bvh_hit = bvh.hit(world, r, 0.001f, std::numeric_limits<float>::max());
 
-        if (bvh_hit.is_hit) {
-            Object *obj = bvh_hit.obj;
-            ColorHit hit = obj->hit(bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
-
-            // bool is_scatter, glm::vec3 attenuation, Ray ray_scatter
-            const auto& [is_scatter, attenuation, ray_scatter] = hit.mat->scatter(r, hit);
-
-            if (is_scatter) {
-                return attenuation * get_color(bvh, world, ray_scatter, depth - 1);
-            }
+        if (!bvh_hit.is_hit) {
             return glm::vec3(0.0, 0.0, 0.0);
         }
 
-        // background
-        float alpha = 0.5f * (r.direction().y + 1.0f);
-        return (1.0f - alpha) * glm::vec3(1.0, 1.0, 1.0) + alpha * glm::vec3(0.5, 0.7, 1.0);
+        Object *obj = bvh_hit.obj;
+        ColorHit hit = obj->hit(bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
+
+        // bool is_scatter, glm::vec3 attenuation, Ray ray_scatter
+        const auto& [is_scatter, attenuation, ray_scatter] = hit.mat->scatter(r, hit);
+        const glm::vec3 color_emitted = hit.mat->emitted(hit);
+
+        if (!is_scatter) {
+            return color_emitted;
+        }
+
+        return color_emitted + attenuation * get_color(bvh, world, ray_scatter, depth - 1);
     }
 };

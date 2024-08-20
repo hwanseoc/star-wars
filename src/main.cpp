@@ -3,6 +3,7 @@
 #include <cmath>
 #include <numbers>
 #include <chrono>
+#include <iomanip>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -83,17 +84,18 @@ void build_world1(World &world) {
 
     std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
     std::shared_ptr<Material> material2 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
-    std::shared_ptr<Material> material3 = std::make_shared<Metal>(glm::vec3(0.1, 0.6, 0.1), 0.0);
+    // std::shared_ptr<Material> material3 = std::make_shared<Metal>(glm::vec3(0.1, 0.6, 0.1), 0.0);
+    std::shared_ptr<Material> material_light_yellow = std::make_shared<DiffuseLight>(glm::vec3(0.7, 0.7, 0.0));
+    std::shared_ptr<Material> material_light_purple = std::make_shared<DiffuseLight>(glm::vec3(0.7, 0.0, 0.7));
+    
     // std::shared_ptr<Material> material3 = std::make_shared<Lambertian>(earth_texture);
-    Sphere sphere1(glm::vec3(-4.0, 1.0, 0.0), 1.0, material1);
-    Sphere sphere2(glm::vec3(0.0, 1.0, 0.0), 1.0, material2);
-    // Sphere sphere3(glm::vec3(4.0, 1.0, 0.0), 1.0, material3);
+    Sphere sphere1(glm::vec3(-4.0, 1.0, 0.0), 1.0, material_light_yellow);
+    Sphere sphere2(glm::vec3(0.0, 1.0, 0.0), 1.0, material_light_purple);
+    Sphere sphere3(glm::vec3(4.0, 1.0, 0.0), 1.0, material_light_yellow);
     world.add(sphere1);
     world.add(sphere2);
-    // world.add(sphere3);
-    add_object(world, "data/prism.obj", glm::vec3(4.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 0.0), 180.0f, glm::vec3(0.8, 0.8, 0.8), material1);
-    //
-    
+    world.add(sphere3);
+    // add_object(world, "data/prism.obj", glm::vec3(4.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 0.0), 180.0f, glm::vec3(0.8, 0.8, 0.8), material1);    
 
     for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
         for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
@@ -155,7 +157,7 @@ void build_world3(World &world) {
 
     std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
     std::shared_ptr<Material> material2 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
-    add_object(world, "data/dragon.obj", glm::vec3(3.0, 3.0, 0.0),glm::vec3(0.0, 1.0, 0.0), 90.0f, glm::vec3(2.0, 2.0, 2.0), material1);
+    add_object(world, "data/prism.obj", glm::vec3(3.0, 3.0, 0.0),glm::vec3(0.0, 1.0, 0.0), 90.0f, glm::vec3(2.0, 2.0, 2.0), material1);
 
     // Triangle triangle_up(glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 3.0), glm::vec3(3.0, 1.0, 0.0), material1);
     // world.add(triangle_up);
@@ -167,7 +169,11 @@ void build_world3(World &world) {
 int32_t main(int32_t argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::string filename = "output.png";
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << "outputs/output-" << std::put_time(std::localtime(&now_c), "%FT%T") << ".png";
+    std::string filename = ss.str();
 
     // TODO move image and camera to build_world
 

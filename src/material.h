@@ -6,7 +6,13 @@
 
 class Material {
 public:
-    virtual std::tuple<bool, glm::vec3, Ray> scatter(const Ray &r, const ColorHit &hit) const = 0;
+    virtual std::tuple<bool, glm::vec3, Ray> scatter(const Ray &r, const ColorHit &hit) const {
+        return std::make_tuple(false, glm::vec3(0, 0, 0), Ray());
+    }
+
+    virtual glm::vec3 emitted(const ColorHit &hit) const {
+        return glm::vec3(0, 0, 0);
+    }
 };
 
 
@@ -104,3 +110,14 @@ private:
     }
 };
 
+class DiffuseLight : public Material {
+    std::shared_ptr<Texture> texture;
+
+public:
+    DiffuseLight(std::shared_ptr<Texture> texture) : texture(texture) {}
+    DiffuseLight(const glm::vec3& emit) : texture(std::make_shared<SolidTexture>(emit)) {}
+
+    glm::vec3 emitted(const ColorHit &hit) const override {
+        return texture->value(hit.u, hit.v, hit.point);
+    }
+};
