@@ -21,9 +21,9 @@ class PerspectiveCamera {
 public:
     PerspectiveCamera() {}
     void setCamera(
-        glm::vec3 &center,
-        glm::vec3& direction,
-        glm::vec3& up,
+        const glm::vec3 &center,
+        const glm::vec3& direction,
+        const glm::vec3& up,
         int32_t height,
         int32_t width,
         float fov,
