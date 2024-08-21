@@ -19,7 +19,8 @@ class PerspectiveCamera {
     glm::vec3 center, pixel00, du, dv, disk_u, disk_v;
 
 public:
-    PerspectiveCamera(
+    PerspectiveCamera() {}
+    void setCamera(
         glm::vec3 &center,
         glm::vec3& direction,
         glm::vec3& up,
@@ -30,7 +31,14 @@ public:
         float defocus_angle,
         int32_t samples,
         int32_t max_depth
-    ) : height(height), width(width), samples(samples), max_depth(max_depth), focal_distance(focal_distance), defocus_angle(defocus_angle), center(center) {
+    ) {
+        this->height = height;
+        this->width = width;
+        this->samples = samples;
+        this->max_depth = max_depth;
+        this->focal_distance = focal_distance;
+        this->defocus_angle = defocus_angle;
+        this->center = center;
         float widthf = static_cast<float>(width);
         float heightf = static_cast<float>(height);
 

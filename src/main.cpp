@@ -29,7 +29,7 @@ void add_object(
     const std::string &filename,
     const glm::vec3 &translate,
     const glm::vec3 &rotate_axis,
-    const float rotate_angle,
+    const float rotate_angle, //degree
     const glm::vec3 &scale,
     std::shared_ptr<Material> &material
 ) {
@@ -52,7 +52,7 @@ void add_object(
 
             glm::mat4 transform_matrix = glm::mat4(1.0f);
             transform_matrix = glm::translate(transform_matrix, translate);
-            transform_matrix = glm::rotate(transform_matrix, rotate_angle, rotate_axis);
+            transform_matrix = glm::rotate(transform_matrix, glm::radians(rotate_angle), rotate_axis);
             transform_matrix = glm::scale(transform_matrix, scale);
 
             auto apply_transform = [&](const glm::vec3& vertex) -> glm::vec3 {
@@ -73,7 +73,33 @@ void add_object(
     }
 }
 
-void build_world1(World &world) {
+void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, int32_t width){
+    // Camera
+    glm::vec3 center(13.0, 2.0, 3.0);
+    glm::vec3 direction(-13.0, -2.0, -3.0);
+    direction = glm::normalize(direction);
+    glm::vec3 up(0.0, 1.0, 0.0);
+    //float fov = 80.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
+    float fov = 0.607537f;
+    int32_t samples = 50;
+    int32_t max_depth = 25;
+    float focal_distance = 10.0f;
+    float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
+
+    perspectiveCamera.setCamera(
+        center,
+        direction,
+        up,
+        height,
+        width,
+        fov,
+        focal_distance,
+        defocus_angle,
+        samples,
+        max_depth
+    );
+
+    // World
     // std::shared_ptr<ImageTexture> earth_texture = std::make_shared<ImageTexture>("data/earthmap.png");
     std::shared_ptr<CheckerTexture> checker = std::make_shared<CheckerTexture>(0.32, glm::vec3(0.2, 0.3, 0.1), glm::vec3(0.9, 0.9, 0.9));
 
@@ -100,9 +126,9 @@ void build_world1(World &world) {
         for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
             float material_choice = random_float();
 
-            glm::vec3 center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
+            glm::vec3 sphere_center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
 
-            if (glm::length(center - glm::vec3(4, 0.2, 0.0)) > 0.9f) {
+            if (glm::length(sphere_center - glm::vec3(4, 0.2, 0.0)) > 0.9f) {
                 std::shared_ptr<Material> material;
 
                 if (material_choice < 0.8f) {
@@ -118,94 +144,28 @@ void build_world1(World &world) {
                     // dielectric
                     material = std::make_shared<Dielectric>(1.5f);
                 }
-                Sphere sphere(center, 0.2, material);
+                Sphere sphere(sphere_center, 0.2, material);
                 world.add(sphere);
             }
         }
     }
+
 }
 
-void build_world2(World &world) {
-    std::shared_ptr<ImageTexture> earth_texture = std::make_shared<ImageTexture>("data/earthmap.png");
-    std::shared_ptr<CheckerTexture> checker = std::make_shared<CheckerTexture>(0.32, glm::vec3(0.2, 0.3, 0.1), glm::vec3(0.9, 0.9, 0.9));
-    std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(checker);
-    Sphere sphere_ground(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
-    world.add(sphere_ground);
-
-    // std::shared_ptr<Material> material_triangle = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.0f, 0.0f));
-    // std::shared_ptr<Material> material_triangle = std::make_shared<Lambertian>(earth_texture);
-    std::shared_ptr<Material> material_triangle = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
-    // Triangle triangle(
-    //     glm::vec3(0.0, 1.0, 8.0),
-    //     glm::vec3(1.0, 1.0, 8.0),
-    //     glm::vec3(0.0, 2.0, 8.2),
-    //     material_triangle
-    // );
-    // world.add(triangle);
-
-    add_object(world, "data/dragon.obj", glm::vec3(0.0, 3.0, 8.0), glm::vec3(0.0, 1.0, 0.0), 90.0f, glm::vec3(3.0, 3.0, 3.0), material_triangle);
-}
-
-void build_world3(World &world) {
-    std::shared_ptr<CheckerTexture> checker = std::make_shared<CheckerTexture>(0.32, glm::vec3(0.2, 0.3, 0.1), glm::vec3(0.9, 0.9, 0.9));
-
-    std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(checker);
-    Sphere sphere_ground(glm::vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
-    world.add(sphere_ground);
-
-
-    std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
-    std::shared_ptr<Material> material2 = std::make_shared<Metal>(glm::vec3(0.7, 0.6, 0.5), 0.0);
-    add_object(world, "data/prism.obj", glm::vec3(3.0, 3.0, 0.0),glm::vec3(0.0, 1.0, 0.0), 90.0f, glm::vec3(2.0, 2.0, 2.0), material1);
-
-    // Triangle triangle_up(glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 1.0, 3.0), glm::vec3(3.0, 1.0, 0.0), material1);
-    // world.add(triangle_up);
-
-    // Triangle triangle_down(glm::vec3(0.0, 0.8, 0.0), glm::vec3(3.0, 0.8, 0.0), glm::vec3(0.0, 0.8, 3.0), material1);
-    // world.add(triangle_down);
-}
-
-int32_t main(int32_t argc, char *argv[]) {
-    auto start = std::chrono::high_resolution_clock::now();
-
-    auto now = std::chrono::system_clock::now();
-    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-    std::stringstream ss;
-    ss << "outputs/output-" << std::put_time(std::localtime(&now_c), "%FT%T") << ".png";
-    std::string filename = ss.str();
-
-    // TODO move image and camera to build_world
-
-    // image
-    int32_t width = 2560/4;
-    int32_t height = 1440/4;
-    std::vector<uint8_t> image(height * width * 4); // rgba
-
-    // camera
-    glm::vec3 center(13.0, 2.0, 3.0);
-    glm::vec3 direction(-13.0, -2.0, -3.0);
+void scene2(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, int32_t width){
+    // Camera
+    glm::vec3 center(0.0, 0.0, 10.0);
+    glm::vec3 direction(0.0, 0.0, -10.0);
     direction = glm::normalize(direction);
     glm::vec3 up(0.0, 1.0, 0.0);
-    //float fov = 80.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
-    float fov = 0.607537f;
-    int32_t samples = 50;
-    int32_t max_depth = 25;
+    float fov = 100.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
+    // float fov = 0.607537f;
+    int32_t samples = 1000;
+    int32_t max_depth = 50;
     float focal_distance = 10.0f;
     float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
 
-
-    // glm::vec3 center(13.0, 13.0, 3.0);
-    // glm::vec3 direction(-13.0, -13.0, -3.0);
-    // direction = glm::normalize(direction);
-    // glm::vec3 up(0.0, 1.0, 0.0);
-    // //float fov = 80.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
-    // float fov = 0.607537f;
-    // int32_t samples = 50;
-    // int32_t max_depth = 25;
-    // float focal_distance = 18.0f;
-    // float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
-
-    PerspectiveCamera perspectiveCamera(
+    perspectiveCamera.setCamera(
         center,
         direction,
         up,
@@ -218,9 +178,47 @@ int32_t main(int32_t argc, char *argv[]) {
         max_depth
     );
 
+    // World
+
+    std::shared_ptr<Material> material_left_wall = std::make_shared<Lambertian>(glm::vec3(0.0, 0.8, 0.0)); // g
+    std::shared_ptr<Material> material_right_wall = std::make_shared<Lambertian>(glm::vec3(0.8, 0.0, 0.0)); // r
+    std::shared_ptr<Material> material_wall = std::make_shared<Lambertian>(glm::vec3(1.0, 1.0, 1.0));
+
+    std::shared_ptr<Material> material_light = std::make_shared<DiffuseLight>(glm::vec3(7.0, 7.0, 7.0));
+
+    std::shared_ptr<Material> material_glass = std::make_shared<Dielectric>(1.5f);
+
+    add_object(world, "data/plate.obj", glm::vec3(0.0, -5.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 0.0f, glm::vec3(10.0, 10.0, 10.0), material_wall); // down
+    add_object(world, "data/plate.obj", glm::vec3(0.0, 5.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 180.0f, glm::vec3(10.0, 10.0, 10.0), material_wall); // up
+    add_object(world, "data/plate.obj", glm::vec3(5.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 90.0f, glm::vec3(10.0, 10.0, 10.0), material_left_wall); // left
+    add_object(world, "data/plate.obj", glm::vec3(-5.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 270.0f, glm::vec3(10.0, 10.0, 10.0), material_right_wall); // right
+    add_object(world, "data/plate.obj", glm::vec3(0.0, 0.0, -5.0), glm::vec3(1.0, 0.0, 0.0), 90.0f, glm::vec3(10.0, 10.0, 10.0), material_wall); // back
+
+    add_object(world, "data/plate.obj", glm::vec3(0.0, 5.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 180.0f, glm::vec3(3.0, 3.0, 3.0), material_light); // up
+
+    add_object(world, "data/dragon.obj", glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0), 90.0f, glm::vec3(2.5, 2.5, 2.5), material_glass);
+
+}
+
+int32_t main(int32_t argc, char *argv[]) {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << "outputs/output-" << std::put_time(std::localtime(&now_c), "%FT%T") << ".png";
+    std::string filename = ss.str();
+
+    // image resolution
+    int32_t width = 2560/2;
+    int32_t height = 1440/2;
+    std::vector<uint8_t> image(height * width * 4); // rgba
+
     // materials
     World world;
-    build_world1(world);
+    PerspectiveCamera perspectiveCamera;
+
+    scene2(world, perspectiveCamera, height, width); // lots of balls
 
     // render
     perspectiveCamera.render(image, world);
@@ -234,7 +232,7 @@ int32_t main(int32_t argc, char *argv[]) {
 
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
-    std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
+    std::cout << std::endl << "Execution time: " << elapsed.count() << " seconds" << std::endl;
 }
 
 
