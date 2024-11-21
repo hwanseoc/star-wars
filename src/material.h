@@ -6,12 +6,12 @@
 
 class Material {
 public:
-    virtual std::tuple<bool, glm::vec3, Ray> scatter(const Ray &r, const ColorHit &hit) const {
-        return std::make_tuple(false, glm::vec3(0, 0, 0), Ray());
+    virtual std::tuple<bool, vec3, Ray> scatter(const Ray &r, const ColorHit &hit) const {
+        return std::make_tuple(false, vec3(0, 0, 0), Ray());
     }
 
-    virtual glm::vec3 emitted(const ColorHit &hit) const {
-        return glm::vec3(0, 0, 0);
+    virtual vec3 emitted(const ColorHit &hit) const {
+        return vec3(0, 0, 0);
     }
 };
 
@@ -20,14 +20,14 @@ class Lambertian : public Material {
     std::shared_ptr<Texture> texture;
 
 public:
-    Lambertian(const glm::vec3 albedo) :  texture(std::make_shared<SolidTexture>(albedo)) {}
+    Lambertian(const vec3 albedo) :  texture(std::make_shared<SolidTexture>(albedo)) {}
     Lambertian(const std::shared_ptr<Texture> &texture) :  texture(texture) {}
 
-    std::tuple<bool, glm::vec3, Ray> scatter(
+    std::tuple<bool, vec3, Ray> scatter(
         const Ray &r,
         const ColorHit &hit
     ) const override {
-        glm::vec3 scattered_direction = hit.normal + random_sphere();
+        vec3 scattered_direction = hit.normal + random_sphere();
 
         // Catch bad scatter direction
         if (std::fabs(scattered_direction.x) < 1e-8f &&
@@ -36,34 +36,34 @@ public:
             scattered_direction = hit.normal;
         }
 
-        Ray scattered = Ray(hit.point, glm::normalize(scattered_direction));
-        glm::vec3 attenuation = texture->value(hit.u, hit.v, hit.point);
+        Ray scattered = Ray(hit.point, normalize(scattered_direction));
+        vec3 attenuation = texture->value(hit.u, hit.v, hit.point);
         return std::make_tuple(true, attenuation, scattered);
     }
 };
 
 class Metal : public Material {
-    glm::vec3 albedo;
+    vec3 albedo;
     float fuzz;
 
 public:
-    Metal(const glm::vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
+    Metal(const vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
 
-    std::tuple<bool, glm::vec3, Ray> scatter(
+    std::tuple<bool, vec3, Ray> scatter(
         const Ray &r,
         const ColorHit &hit
     ) const override {
-        glm::vec3 reflected = reflect(r.direction, hit.normal);
-        reflected = glm::normalize(reflected) + random_sphere() * fuzz;
-        Ray scattered = Ray(hit.point, glm::normalize(reflected));
-        glm::vec3 attenuation = albedo;
-        bool is_scattered = glm::dot(scattered.direction, hit.normal) > 0;
+        vec3 reflected = reflect(r.direction, hit.normal);
+        reflected = normalize(reflected) + random_sphere() * fuzz;
+        Ray scattered = Ray(hit.point, normalize(reflected));
+        vec3 attenuation = albedo;
+        bool is_scattered = dot(scattered.direction, hit.normal) > 0;
         return std::make_tuple(is_scattered, attenuation, scattered);
     }
 
 private:
-    inline glm::vec3 reflect(const glm::vec3 &direction, const glm::vec3 &normal) const {
-        return direction - 2 * glm::dot(direction, normal) * normal;
+    inline vec3 reflect(const vec3 &direction, const vec3 &normal) const {
+        return direction - 2 * dot(direction, normal) * normal;
     }
 };
 
@@ -73,34 +73,34 @@ class Dielectric : public Material {
 public:
     Dielectric(float refractive_index) : refractive_index(refractive_index) {}
 
-    std::tuple<bool, glm::vec3, Ray> scatter(
+    std::tuple<bool, vec3, Ray> scatter(
         const Ray &r,
         const ColorHit &hit
     ) const override {
         float refractive_index_face = hit.is_front ? (1.0f / refractive_index) : refractive_index;
 
-        float cos_theta = glm::dot(-r.direction, hit.normal);
+        float cos_theta = dot(-r.direction, hit.normal);
         float sin_theta = std::sqrt(1.0f - cos_theta * cos_theta);
 
-        glm::vec3 direction;
+        vec3 direction;
         if (refractive_index_face * sin_theta > 1.0f || schlick_reflectance(cos_theta, refractive_index_face) > random_float()) {
             direction = reflect(r.direction, hit.normal);
         } else {
             direction = refract(r.direction, hit.normal, refractive_index_face);
         }
 
-        return std::make_tuple(true, glm::vec3(1.0, 1.0, 1.0), Ray(hit.point, direction));
+        return std::make_tuple(true, vec3(1.0, 1.0, 1.0), Ray(hit.point, direction));
     }
 private:
-    inline glm::vec3 refract(const glm::vec3 &direction, const glm::vec3 &normal, float refractive_index_face) const {
-        glm::vec3 r_vertical = refractive_index_face * (direction + glm::dot(-direction, normal) * normal);
+    inline vec3 refract(const vec3 &direction, const vec3 &normal, float refractive_index_face) const {
+        vec3 r_vertical = refractive_index_face * (direction + dot(-direction, normal) * normal);
         float r_vertical_sq = r_vertical.x * r_vertical.x + r_vertical.y * r_vertical.y + r_vertical.z * r_vertical.z;
-        glm::vec3 r_horizontal = -std::sqrt(std::fabs(1.0f - r_vertical_sq)) * normal;
+        vec3 r_horizontal = -std::sqrt(std::fabs(1.0f - r_vertical_sq)) * normal;
         return r_vertical + r_horizontal;
     }
 
-    inline glm::vec3 reflect(const glm::vec3 &direction, const glm::vec3 &normal) const {
-        return direction - 2 * glm::dot(direction, normal) * normal;
+    inline vec3 reflect(const vec3 &direction, const vec3 &normal) const {
+        return direction - 2 * dot(direction, normal) * normal;
     }
 
     inline float schlick_reflectance(float cos_theta, float refractive_index) const {
@@ -115,9 +115,9 @@ class DiffuseLight : public Material {
 
 public:
     DiffuseLight(std::shared_ptr<Texture> texture) : texture(texture) {}
-    DiffuseLight(const glm::vec3& emit) : texture(std::make_shared<SolidTexture>(emit)) {}
+    DiffuseLight(const vec3& emit) : texture(std::make_shared<SolidTexture>(emit)) {}
 
-    glm::vec3 emitted(const ColorHit &hit) const override {
+    vec3 emitted(const ColorHit &hit) const override {
         return texture->value(hit.u, hit.v, hit.point);
     }
 };

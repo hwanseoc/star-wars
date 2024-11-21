@@ -3,8 +3,8 @@
 #include <cmath>
 #include <numbers>
 
-#include <glm/glm.hpp>
-
+// #include <glm/glm.hpp>
+#include <vec.h>
 #include <object.h>
 
 
@@ -24,34 +24,34 @@ counter-clockwise, 1->2->3
 
 // P = v1 + (v2 - v1) * u + (v3 - v1) * v
 class Triangle : public Object {
-    glm::vec3 v1, v2, v3;
-    glm::vec3 normal;
+    vec3 v1, v2, v3;
+    vec3 normal;
     std::shared_ptr<Material> mat;
 
 public:
-    Triangle(const glm::vec3 &v1, const glm::vec3 &v2, const glm::vec3 &v3, std::shared_ptr<Material> mat) : v1(v1), v2(v2), v3(v3), mat(mat) {
-        glm::vec3 u_edge = v2 - v1;
-        glm::vec3 v_edge = v3 - v1;
-        normal = glm::normalize(glm::cross(u_edge, v_edge));
+    Triangle(const vec3 &v1, const vec3 &v2, const vec3 &v3, std::shared_ptr<Material> mat) : v1(v1), v2(v2), v3(v3), mat(mat) {
+        vec3 u_edge = v2 - v1;
+        vec3 v_edge = v3 - v1;
+        normal = normalize(cross(u_edge, v_edge));
     }
 
     ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const override {
         ColorHit ret;
         ret.point = r.at(bvhhit.t);
         ret.direction = random_hemisphere(ret.normal);
-        ret.is_front = glm::dot(r.direction, normal) < 0.0f;
+        ret.is_front = dot(r.direction, normal) < 0.0f;
         ret.normal = ret.is_front ? normal : -normal;
         ret.mat = mat;
 
-        glm::vec3 edge1 = v2 - v1;
-        glm::vec3 edge2 = v3 - v1;
-        glm::vec3 ray_cross_edge2 = glm::cross(r.direction, edge2);
-        float det = glm::dot(edge1, ray_cross_edge2);
+        vec3 edge1 = v2 - v1;
+        vec3 edge2 = v3 - v1;
+        vec3 ray_cross_edge2 = cross(r.direction, edge2);
+        float det = dot(edge1, ray_cross_edge2);
         float inv_det = 1.0f / det;
-        glm::vec3 s = r.origin - v1;
-        glm::vec3 q = glm::cross(s, edge1);
-        float u = inv_det * glm::dot(s, ray_cross_edge2);
-        float v = inv_det * glm::dot(r.direction, q);
+        vec3 s = r.origin - v1;
+        vec3 q = cross(s, edge1);
+        float u = inv_det * dot(s, ray_cross_edge2);
+        float v = inv_det * dot(r.direction, q);
 
         ret.u = u;
         ret.v = v;
@@ -63,10 +63,10 @@ public:
         BVHHit ret;
         ret.is_hit = false;
 
-        glm::vec3 edge1 = v2 - v1;
-        glm::vec3 edge2 = v3 - v1;
-        glm::vec3 ray_cross_edge2 = glm::cross(r.direction, edge2);
-        float det = glm::dot(edge1, ray_cross_edge2);
+        vec3 edge1 = v2 - v1;
+        vec3 edge2 = v3 - v1;
+        vec3 ray_cross_edge2 = cross(r.direction, edge2);
+        float det = dot(edge1, ray_cross_edge2);
 
         // the ray is parallel to the triangle.
         if (std::abs(det) <= std::numeric_limits<float>::epsilon()) {
@@ -74,23 +74,23 @@ public:
         }
 
         float inv_det = 1.0f / det;
-        glm::vec3 s = r.origin - v1;
-        float u = inv_det * glm::dot(s, ray_cross_edge2);
+        vec3 s = r.origin - v1;
+        float u = inv_det * dot(s, ray_cross_edge2);
 
         // the intersection is outside of the triangle.
         if (u < 0.0f || u > 1.0f) {
             return ret;
         }
 
-        glm::vec3 q = glm::cross(s, edge1);
-        float v = inv_det * glm::dot(r.direction, q);
+        vec3 q = cross(s, edge1);
+        float v = inv_det * dot(r.direction, q);
 
         // the intersection is outside of the triangle.
         if (v < 0.0f || u + v > 1.0f) {
             return ret;
         }
 
-        float t = inv_det * glm::dot(edge2, q);
+        float t = inv_det * dot(edge2, q);
 
         // the intersection is outside the valid t range.
         if (t < tmin || t > tmax) {
@@ -104,13 +104,13 @@ public:
     }
 
     AABB aabb() const override {
-        glm::vec3 min(
+        vec3 min(
             std::min({v1.x, v2.x, v3.x}),
             std::min({v1.y, v2.y, v3.y}),
             std::min({v1.z, v2.z, v3.z})
         );
 
-        glm::vec3 max(
+        vec3 max(
             std::max({v1.x, v2.x, v3.x}),
             std::max({v1.y, v2.y, v3.y}),
             std::max({v1.z, v2.z, v3.z})

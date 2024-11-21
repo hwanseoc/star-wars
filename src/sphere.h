@@ -3,23 +3,24 @@
 #include <cmath>
 #include <numbers>
 
-#include <glm/glm.hpp>
+// #include <glm/glm.hpp>
+#include <vec.h>
 
 #include <object.h>
 
 class Sphere : public Object {
-    glm::vec3 origin;
+    vec3 origin;
     float radius;
     std::shared_ptr<Material> mat;
 
 public:
-    Sphere(const glm::vec3 &origin, float radius, std::shared_ptr<Material> mat) : origin(origin), radius(radius), mat(mat) {}
+    Sphere(const vec3 &origin, float radius, std::shared_ptr<Material> mat) : origin(origin), radius(radius), mat(mat) {}
 
     ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const override {
         ColorHit ret;
         ret.point = r.at(bvhhit.t);
-        glm::vec3 outward_normal = glm::normalize((ret.point - origin) / radius);
-        ret.is_front = glm::dot(r.direction, outward_normal) < 0.0f;
+        vec3 outward_normal = normalize((ret.point - origin) / radius);
+        ret.is_front = dot(r.direction, outward_normal) < 0.0f;
         ret.normal = ret.is_front ? outward_normal : -outward_normal;
         ret.direction = random_hemisphere(ret.normal);
         ret.mat = mat;
@@ -34,9 +35,9 @@ public:
     }
 
     BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const override {
-        glm::vec3 oc = origin - r.origin;
+        vec3 oc = origin - r.origin;
         float a = 1.0f;
-        float h = glm::dot(r.direction, oc);
+        float h = dot(r.direction, oc);
         float c = oc.x * oc.x + oc.y * oc.y + oc.z * oc.z - radius * radius;
         float discriminant = h * h - a * c;
 
@@ -64,7 +65,7 @@ public:
     }
 
     AABB aabb() const override {
-        glm::vec3 rvec(radius, radius, radius);
+        vec3 rvec(radius, radius, radius);
         return AABB(origin - rvec, origin + rvec);
     }
 };

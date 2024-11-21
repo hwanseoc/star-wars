@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include <glm/glm.hpp>
-
+// #include <glm/glm.hpp>
+#include <vec.h>
 #include <random.h>
 #include <ray.h>
 
@@ -17,9 +17,9 @@ struct BVHHit {
 };
 
 struct ColorHit {
-    glm::vec3 point;
-    glm::vec3 normal;
-    glm::vec3 direction;
+    vec3 point;
+    vec3 normal;
+    vec3 direction;
     float u; // texture x coord
     float v; // texture y coord
     std::shared_ptr<Material> mat;
@@ -28,11 +28,11 @@ struct ColorHit {
 
 class AABB {
 public:
-    glm::vec3 box_aa, box_bb;
+    vec3 box_aa, box_bb;
 
     AABB() : box_aa(0.0f, 0.0f, 0.0f), box_bb(0.0f, 0.0f, 0.0f) {}
 
-    AABB(const glm::vec3 &box_aa_, const glm::vec3 &box_bb_) {
+    AABB(const vec3 &box_aa_, const vec3 &box_bb_) {
         constexpr float delta = 0.0001f;
         for (int32_t i = 0; i < 3; ++i){
             float dif = box_bb_[i] - box_aa_[i];
@@ -54,8 +54,8 @@ public:
     }
 
     bool hit(const Ray &r, float tmin, float tmax) const {
-        const glm::vec3 &origin = r.origin;
-        const glm::vec3 &direction = r.direction;
+        const vec3 &origin = r.origin;
+        const vec3 &direction = r.direction;
 
         for (int32_t i = 0; i < 3; ++i) {
             float inverse_direction = 1.0f / direction[i];
