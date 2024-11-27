@@ -225,6 +225,8 @@ int32_t main(int32_t argc, char *argv[]) {
     // image resolution
     int32_t width = 2560;
     int32_t height = 1440;
+    // int32_t width = 20;
+    // int32_t height = 20;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // materials
@@ -234,7 +236,7 @@ int32_t main(int32_t argc, char *argv[]) {
     scene1(world, perspectiveCamera, height, width); // lots of balls
 
     // render
-    perspectiveCamera.render(image, world);
+    perspectiveCamera.render_gpu(image, world);
 
 
     ppm(image, height, width);

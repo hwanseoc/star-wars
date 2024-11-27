@@ -4,14 +4,15 @@
 
 #include <object.h>
 
+struct BVHNode {
+    bool is_leaf;
+    AABB aabb;
+    int64_t left;
+    int64_t right;
+    const Object* obj;
+};
+
 class BVH {
-    struct BVHNode {
-        bool is_leaf;
-        AABB aabb;
-        int64_t left;
-        int64_t right;
-        const Object* obj;
-    };
 
     std::vector<BVHNode> nodes;
     int64_t root = -1;
@@ -19,7 +20,7 @@ class BVH {
 public:
     BVH() {}
     BVH(const World &w) {
-        const std::vector<const Object*> &objects = w.get_objects();
+        const std::vector<Object*> &objects = w.get_objects();
 
         for (const Object* obj : objects) {
             BVHNode node = {
@@ -31,6 +32,14 @@ public:
         }
 
         root = build_recursive(0, objects.size());
+    }
+
+    int64_t get_root() {
+        return root;
+    }
+
+    std::vector<BVHNode> &get_nodes(){
+        return nodes;
     }
 
 private:
@@ -128,4 +137,83 @@ private:
             return bvhhit;
         }
     }
+};
+
+
+class cuda_BVH {
+    BVHNode *dev_nodes;
+    int32_t dev_num_nodes;
+    int64_t dev_root = -1;
+
+public:
+    cuda_BVH() {}
+    cuda_BVH(BVH bvh) {
+        std::vector<BVHNode> nodes_vector = bvh.get_nodes();
+        int32_t num_nodes = nodes_vector.size();
+
+        BVHNode *host_nodes = (BVHNode *)malloc(sizeof(BVHNode) * num_nodes);
+        for(int32_t i=0; i<num_nodes; ++i) {
+            host_nodes[i] = nodes_vector[i];
+        }
+
+        cudaMalloc(&dev_nodes, sizeof(BVHNode) * num_nodes);
+        cudaMemcpy(dev_nodes, host_nodes, sizeof(BVHNode) * num_nodes, cudaMemcpyHostToDevice);
+
+        dev_root = bvh.get_root();
+        dev_num_nodes = num_nodes;
+
+        free(host_nodes);
+    }
+    ~cuda_BVH(){
+        cudaFree(dev_nodes);
+    }
+
+    BVHHit hit(const World &w, const Ray &r, float tmin, float tmax) const {
+        return hit_recursive(w, r, tmin, tmax, dev_root);
+    }
+
+private:
+    BVHHit hit_recursive(const World &w, const Ray &r, float tmin, float tmax, int64_t parent_node) const {
+        BVHNode node = dev_nodes[parent_node];
+
+        BVHHit bvhhit;
+        bvhhit.is_hit = false;
+        bvhhit.t = 0.0f;
+
+        // if not node.hit
+        if (!node.aabb.hit(r, tmin, tmax)) {
+            return bvhhit;
+        }
+
+        // object.hit
+        if (node.is_leaf) {
+            const Object* object = node.obj;
+
+            bvhhit = object->bvh_hit(r, tmin, tmax);
+
+            if (bvhhit.is_hit){
+                bvhhit.obj = object;
+            }
+
+            return bvhhit;
+        } else {
+            // TODO : make sure hit_right does not have dependency on hit_left,
+            // so that we can parallelize hit_left and hit_right
+            BVHHit bvhhit_left = hit_recursive(w, r, tmin, tmax, node.left);
+
+            if (bvhhit_left.is_hit) {
+                tmax = bvhhit_left.t;
+            }
+
+            BVHHit bvhhit_right = hit_recursive(w, r, tmin, tmax, node.right);
+
+            if (bvhhit_right.is_hit) {
+                return bvhhit_right;
+            } else if (bvhhit_left.is_hit){
+                return bvhhit_left;
+            }
+
+            return bvhhit;
+        }
+    }    
 };

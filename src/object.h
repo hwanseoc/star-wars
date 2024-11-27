@@ -83,18 +83,19 @@ public:
 
 class Object {
 public:
-    virtual ~Object() = default;
+    Material *mat;
+    __host__ __device__ virtual ~Object() = default;
 
-    virtual AABB aabb() const = 0;
+    __host__ __device__ virtual AABB aabb() const = 0;
 
-    virtual ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const = 0;
+    __device__ virtual ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const = 0;
 
-    virtual BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const = 0;
+    __device__ virtual BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const = 0;
 };
 
 class World {
-    std::vector<const Object*> objects;
-    std::vector<const Material*> materials;
+    std::vector<Object*> objects;
+    std::vector<Material*> materials;
     AABB box_aabb;
 
 public:
@@ -102,10 +103,10 @@ public:
 
 
     void destroy() {
-        for (const Object* &obj_ptr : objects) {
+        for (Object* &obj_ptr : objects) {
             delete obj_ptr;
         }
-        for (const Material* &mat_ptr : materials) {
+        for (Material* &mat_ptr : materials) {
             delete mat_ptr;
         }
     }
@@ -128,17 +129,52 @@ public:
         materials.push_back(mat);
     }
 
-    const std::vector<const Object*>& get_objects() const {
+    const std::vector<Object*>& get_objects() const {
         return objects;
     }
 };
 
 class cuda_World {
-    Object** objects;
-    AABB box_aabb;
-    int32_t num_objects;
+    Object** dev_objects;
+    AABB *dev_box_aabb;
+    int32_t dev_num_objects;
 public:
-    cuda_World(World w) {
-        
+    __host__ __device__ cuda_World() {}
+    __host__ __device__ cuda_World(World w) {
+        std::vector<Object*> objects_vector = w.get_objects();
+        AABB host_box_aabb = w.aabb();
+        int32_t num_objects = objects_vector.size();
+        Object** host_objects = (Object **)malloc(sizeof(Object *) * num_objects);
+
+        for(int32_t i=0; i<num_objects; ++i) {
+            host_objects[i] = objects_vector[i];
+        }
+
+        cudaMalloc(&dev_objects, sizeof(Object *) * num_objects);
+        cudaMemcpy(dev_objects, host_objects, sizeof(Object *) * num_objects, cudaMemcpyHostToDevice);
+
+        cudaMalloc(&dev_box_aabb, sizeof(AABB));
+        cudaMemcpy(dev_box_aabb, &host_box_aabb, sizeof(AABB), cudaMemcpyHostToDevice);
+
+        dev_num_objects = num_objects;
+
+        free(host_objects);
+    }
+
+    __host__ __device__ void destory() {
+        cudaFree(dev_objects);
+        cudaFree(dev_box_aabb);
+    }
+
+    __device__ AABB aabb() const {
+        return *dev_box_aabb;
+    }
+
+    __device__ int32_t size() const {
+        return dev_num_objects;
+    }
+
+    __device__ Object **get_objects() const {
+        return dev_objects;
     }
 };
