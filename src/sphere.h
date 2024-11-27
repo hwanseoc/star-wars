@@ -11,10 +11,10 @@
 class Sphere : public Object {
     vec3 origin;
     float radius;
-    std::shared_ptr<Material> mat;
+    Material *mat;
 
 public:
-    Sphere(const vec3 &origin, float radius, std::shared_ptr<Material> mat) : origin(origin), radius(radius), mat(mat) {}
+    Sphere(const vec3 &origin, float radius, Material *mat) : origin(origin), radius(radius), mat(mat) {}
 
     ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const override {
         ColorHit ret;

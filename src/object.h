@@ -22,7 +22,7 @@ struct ColorHit {
     vec3 direction;
     float u; // texture x coord
     float v; // texture y coord
-    std::shared_ptr<Material> mat;
+    Material *mat;
     bool is_front;
 };
 
@@ -94,6 +94,7 @@ public:
 
 class World {
     std::vector<const Object*> objects;
+    std::vector<const Material*> materials;
     AABB box_aabb;
 
 public:
@@ -103,6 +104,9 @@ public:
     void destroy() {
         for (const Object* &obj_ptr : objects) {
             delete obj_ptr;
+        }
+        for (const Material* &mat_ptr : materials) {
+            delete mat_ptr;
         }
     }
 
@@ -119,7 +123,22 @@ public:
         box_aabb = AABB(box_aabb, temp->aabb());
     }
 
+    template <typename MAT_T>
+    void add_mat(MAT_T mat) {
+        materials.push_back(mat);
+    }
+
     const std::vector<const Object*>& get_objects() const {
         return objects;
+    }
+};
+
+class cuda_World {
+    Object** objects;
+    AABB box_aabb;
+    int32_t num_objects;
+public:
+    cuda_World(World w) {
+        
     }
 };

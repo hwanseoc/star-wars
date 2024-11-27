@@ -26,10 +26,10 @@ counter-clockwise, 1->2->3
 class Triangle : public Object {
     vec3 v1, v2, v3;
     vec3 normal;
-    std::shared_ptr<Material> mat;
+    Material *mat;
 
 public:
-    Triangle(const vec3 &v1, const vec3 &v2, const vec3 &v3, std::shared_ptr<Material> mat) : v1(v1), v2(v2), v3(v3), mat(mat) {
+    Triangle(const vec3 &v1, const vec3 &v2, const vec3 &v3, Material *mat) : v1(v1), v2(v2), v3(v3), mat(mat) {
         vec3 u_edge = v2 - v1;
         vec3 v_edge = v3 - v1;
         normal = normalize(cross(u_edge, v_edge));

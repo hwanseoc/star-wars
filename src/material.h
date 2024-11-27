@@ -6,27 +6,33 @@
 
 class Material {
 public:
-    virtual std::tuple<bool, vec3, Ray> scatter(const Ray &r, const ColorHit &hit) const {
-        return std::make_tuple(false, vec3(0, 0, 0), Ray());
-    }
-
-    virtual vec3 emitted(const ColorHit &hit) const {
+    __host__ virtual vec3 emitted(const ColorHit &hit) const {
         return vec3(0, 0, 0);
     }
+
+    __host__ virtual void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
+        is_scattered = false;
+        attenuation = vec3(0, 0, 0);
+        scattered = Ray();
+    }
+
 };
 
 
 class Lambertian : public Material {
-    std::shared_ptr<Texture> texture;
+    Texture *texture;
 
 public:
-    Lambertian(const vec3 albedo) :  texture(std::make_shared<SolidTexture>(albedo)) {}
-    Lambertian(const std::shared_ptr<Texture> &texture) :  texture(texture) {}
+    __host__ Lambertian(const vec3 albedo) {
+        texture = new SolidTexture(albedo);
+    }
+    __host__ Lambertian(Texture *texture) :  texture(texture) {}
 
-    std::tuple<bool, vec3, Ray> scatter(
-        const Ray &r,
-        const ColorHit &hit
-    ) const override {
+    __host__ ~Lambertian(){
+        delete texture;
+    }
+
+    __host__ virtual void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override{
         vec3 scattered_direction = hit.normal + random_sphere();
 
         // Catch bad scatter direction
@@ -35,11 +41,11 @@ public:
             std::fabs(scattered_direction.z) < 1e-8f) {
             scattered_direction = hit.normal;
         }
-
-        Ray scattered = Ray(hit.point, normalize(scattered_direction));
-        vec3 attenuation = texture->value(hit.u, hit.v, hit.point);
-        return std::make_tuple(true, attenuation, scattered);
+        is_scattered = true;
+        scattered = Ray(hit.point, normalize(scattered_direction));
+        attenuation = texture->value(hit.u, hit.v, hit.point);
     }
+
 };
 
 class Metal : public Material {
@@ -47,19 +53,17 @@ class Metal : public Material {
     float fuzz;
 
 public:
-    Metal(const vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
+    __host__ Metal(const vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
 
-    std::tuple<bool, vec3, Ray> scatter(
-        const Ray &r,
-        const ColorHit &hit
-    ) const override {
+    __host__ virtual void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
         vec3 reflected = reflect(r.direction, hit.normal);
         reflected = normalize(reflected) + random_sphere() * fuzz;
-        Ray scattered = Ray(hit.point, normalize(reflected));
-        vec3 attenuation = albedo;
-        bool is_scattered = dot(scattered.direction, hit.normal) > 0;
-        return std::make_tuple(is_scattered, attenuation, scattered);
+
+        scattered = Ray(hit.point, normalize(reflected));
+        attenuation = albedo;
+        is_scattered = dot(scattered.direction, hit.normal) > 0;
     }
+    
 
 private:
     inline vec3 reflect(const vec3 &direction, const vec3 &normal) const {
@@ -71,12 +75,9 @@ class Dielectric : public Material {
     float refractive_index;
 
 public:
-    Dielectric(float refractive_index) : refractive_index(refractive_index) {}
+    __host__ Dielectric(float refractive_index) : refractive_index(refractive_index) {}
 
-    std::tuple<bool, vec3, Ray> scatter(
-        const Ray &r,
-        const ColorHit &hit
-    ) const override {
+    __host__ virtual void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
         float refractive_index_face = hit.is_front ? (1.0f / refractive_index) : refractive_index;
 
         float cos_theta = dot(-r.direction, hit.normal);
@@ -89,7 +90,9 @@ public:
             direction = refract(r.direction, hit.normal, refractive_index_face);
         }
 
-        return std::make_tuple(true, vec3(1.0, 1.0, 1.0), Ray(hit.point, direction));
+        is_scattered = true;
+        attenuation = vec3(1.0, 1.0, 1.0);
+        scattered = Ray(hit.point, direction);
     }
 private:
     inline vec3 refract(const vec3 &direction, const vec3 &normal, float refractive_index_face) const {
@@ -111,11 +114,16 @@ private:
 };
 
 class DiffuseLight : public Material {
-    std::shared_ptr<Texture> texture;
+    Texture *texture;
 
 public:
-    DiffuseLight(std::shared_ptr<Texture> texture) : texture(texture) {}
-    DiffuseLight(const vec3& emit) : texture(std::make_shared<SolidTexture>(emit)) {}
+    DiffuseLight(Texture *texture) : texture(texture) {}
+    DiffuseLight(const vec3& emit) {
+        texture = new SolidTexture(emit);
+    }
+    ~DiffuseLight(){
+        delete texture;
+    }
 
     vec3 emitted(const ColorHit &hit) const override {
         return texture->value(hit.u, hit.v, hit.point);

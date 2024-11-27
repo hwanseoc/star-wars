@@ -171,7 +171,10 @@ public:
         ColorHit hit = obj->hit(bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
 
         // bool is_scatter, vec3 attenuation, Ray ray_scatter
-        const auto& [is_scatter, attenuation, ray_scatter] = hit.mat->scatter(r, hit);
+        bool is_scatter;
+        vec3 attenuation;
+        Ray ray_scatter;
+        hit.mat->scatter(r, hit, is_scatter, attenuation, ray_scatter);
         const vec3 color_emitted = hit.mat->emitted(hit);
 
         if (!is_scatter) {
