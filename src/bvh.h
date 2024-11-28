@@ -18,8 +18,8 @@ class BVH {
     int64_t root = -1;
 
 public:
-    BVH() {}
-    BVH(const World &w) {
+    __host__ __device__ BVH() {}
+    __host__ BVH(const World &w) {
         const std::vector<Object*> &objects = w.get_objects();
 
         for (const Object* obj : objects) {
@@ -43,7 +43,7 @@ public:
     }
 
 private:
-    int64_t build_recursive(int64_t start, int64_t end) {
+    __host__ int64_t build_recursive(int64_t start, int64_t end) {
         int64_t n_objects = end - start;
 
         if (n_objects == 1) {
@@ -88,55 +88,55 @@ private:
         return nodes.size() - 1;
     }
 
-public:
-    BVHHit hit(const World &w, const Ray &r, float tmin, float tmax) const {
-        return hit_recursive(w, r, tmin, tmax, root);
-    }
+// public:
+//     BVHHit hit(const World &w, const Ray &r, float tmin, float tmax) const {
+//         return hit_recursive(w, r, tmin, tmax, root);
+//     }
 
-private:
-    BVHHit hit_recursive(const World &w, const Ray &r, float tmin, float tmax, int64_t parent_node) const {
-        const BVHNode &node = nodes[parent_node];
+// private:
+//     BVHHit hit_recursive(const World &w, const Ray &r, float tmin, float tmax, int64_t parent_node) const {
+//         const BVHNode &node = nodes[parent_node];
 
-        BVHHit bvhhit;
-        bvhhit.is_hit = false;
-        bvhhit.t = 0.0f;
+//         BVHHit bvhhit;
+//         bvhhit.is_hit = false;
+//         bvhhit.t = 0.0f;
 
-        // if not node.hit
-        if (!node.aabb.hit(r, tmin, tmax)) {
-            return bvhhit;
-        }
+//         // if not node.hit
+//         if (!node.aabb.hit(r, tmin, tmax)) {
+//             return bvhhit;
+//         }
 
-        // object.hit
-        if (node.is_leaf) {
-            const Object* object = node.obj;
+//         // object.hit
+//         if (node.is_leaf) {
+//             const Object* object = node.obj;
 
-            bvhhit = object->bvh_hit(r, tmin, tmax);
+//             bvhhit = object->bvh_hit(r, tmin, tmax);
 
-            if (bvhhit.is_hit){
-                bvhhit.obj = object;
-            }
+//             if (bvhhit.is_hit){
+//                 bvhhit.obj = object;
+//             }
 
-            return bvhhit;
-        } else {
-            // TODO : make sure hit_right does not have dependency on hit_left,
-            // so that we can parallelize hit_left and hit_right
-            BVHHit bvhhit_left = hit_recursive(w, r, tmin, tmax, node.left);
+//             return bvhhit;
+//         } else {
+//             // TODO : make sure hit_right does not have dependency on hit_left,
+//             // so that we can parallelize hit_left and hit_right
+//             BVHHit bvhhit_left = hit_recursive(w, r, tmin, tmax, node.left);
 
-            if (bvhhit_left.is_hit) {
-                tmax = bvhhit_left.t;
-            }
+//             if (bvhhit_left.is_hit) {
+//                 tmax = bvhhit_left.t;
+//             }
 
-            BVHHit bvhhit_right = hit_recursive(w, r, tmin, tmax, node.right);
+//             BVHHit bvhhit_right = hit_recursive(w, r, tmin, tmax, node.right);
 
-            if (bvhhit_right.is_hit) {
-                return bvhhit_right;
-            } else if (bvhhit_left.is_hit){
-                return bvhhit_left;
-            }
+//             if (bvhhit_right.is_hit) {
+//                 return bvhhit_right;
+//             } else if (bvhhit_left.is_hit){
+//                 return bvhhit_left;
+//             }
 
-            return bvhhit;
-        }
-    }
+//             return bvhhit;
+//         }
+//     }
 };
 
 
@@ -146,8 +146,8 @@ class cuda_BVH {
     int64_t dev_root = -1;
 
 public:
-    cuda_BVH() {}
-    cuda_BVH(BVH bvh) {
+    __host__ __device__ cuda_BVH() {}
+    __host__ cuda_BVH(BVH bvh) {
         std::vector<BVHNode> nodes_vector = bvh.get_nodes();
         int32_t num_nodes = nodes_vector.size();
 
@@ -164,16 +164,16 @@ public:
 
         free(host_nodes);
     }
-    ~cuda_BVH(){
+    __host__ ~cuda_BVH(){
         cudaFree(dev_nodes);
     }
 
-    BVHHit hit(const World &w, const Ray &r, float tmin, float tmax) const {
+    __device__ BVHHit hit(const cuda_World &w, const Ray &r, float tmin, float tmax) const {
         return hit_recursive(w, r, tmin, tmax, dev_root);
     }
 
 private:
-    BVHHit hit_recursive(const World &w, const Ray &r, float tmin, float tmax, int64_t parent_node) const {
+    __device__ BVHHit hit_recursive(const cuda_World &w, const Ray &r, float tmin, float tmax, int64_t parent_node) const {
         BVHNode node = dev_nodes[parent_node];
 
         BVHHit bvhhit;

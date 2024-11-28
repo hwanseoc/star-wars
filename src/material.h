@@ -24,9 +24,9 @@ class Lambertian : public Material {
 
 public:
     __host__ Lambertian(const vec3 albedo) {
-        SolidTexture *host_tex = new SolidTexture(albedo);
-        cudaMalloc(&texture, sizeof(SolidTexture));
-        cudaMemcpy(texture, host_tex, sizeof(SolidTexture), cudaMemcpyHostToDevice);
+        Texture *host_tex = new SolidTexture(albedo);
+        cudaMalloc(&texture, sizeof(Texture));
+        cudaMemcpy(texture, host_tex, sizeof(Texture), cudaMemcpyHostToDevice);
 
         delete host_tex;
     }
@@ -123,10 +123,13 @@ class DiffuseLight : public Material {
 public:
     __host__ __device__ DiffuseLight(Texture *texture) : texture(texture) {}
     __host__ __device__ DiffuseLight(const vec3& emit) {
-        texture = new SolidTexture(emit);
+        Texture *host_tex = new SolidTexture(emit);
+        cudaMalloc(&texture, sizeof(Texture));
+        cudaMemcpy(texture, host_tex, sizeof(Texture), cudaMemcpyHostToDevice);
+        delete host_tex;
     }
     __host__ __device__ ~DiffuseLight(){
-        delete texture;
+        cudaFree(texture);
     }
 
     __device__ vec3 emitted(const ColorHit &hit) const override {

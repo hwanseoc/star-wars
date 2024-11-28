@@ -104,10 +104,10 @@ public:
 
     void destroy() {
         for (Object* &obj_ptr : objects) {
-            delete obj_ptr;
+            cudaFree(obj_ptr);
         }
         for (Material* &mat_ptr : materials) {
-            delete mat_ptr;
+            cudaFree(mat_ptr);
         }
     }
 
@@ -116,12 +116,10 @@ public:
     }
 
     template <typename OBJ_T>
-    void add(OBJ_T &obj) {
-        OBJ_T *temp = new OBJ_T(obj);
+    void add(OBJ_T obj) {
+        objects.push_back(obj);
 
-        objects.push_back(temp);
-
-        box_aabb = AABB(box_aabb, temp->aabb());
+        box_aabb = AABB(box_aabb, obj->aabb());
     }
 
     template <typename MAT_T>
@@ -140,7 +138,7 @@ class cuda_World {
     int32_t dev_num_objects;
 public:
     __host__ __device__ cuda_World() {}
-    __host__ __device__ cuda_World(World w) {
+    __host__ cuda_World(World w) {
         std::vector<Object*> objects_vector = w.get_objects();
         AABB host_box_aabb = w.aabb();
         int32_t num_objects = objects_vector.size();
@@ -161,7 +159,7 @@ public:
         free(host_objects);
     }
 
-    __host__ __device__ void destory() {
+    __host__ void destory() {
         cudaFree(dev_objects);
         cudaFree(dev_box_aabb);
     }

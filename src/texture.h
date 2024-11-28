@@ -8,7 +8,7 @@
 
 class Texture {
 public:
-    __host__ __device__ virtual ~Texture() = default;
+    __host__ virtual ~Texture() = default;
 
     __device__ virtual vec3 value(float u, float v, const vec3 &p) const = 0;
 };
@@ -17,7 +17,7 @@ public:
 class SolidTexture : public Texture {
     vec3 albedo;
 public:
-    __host__ __device__ SolidTexture(const vec3 &albedo) : albedo(albedo) {}
+    __host__ SolidTexture(const vec3 &albedo) : albedo(albedo) {}
 
     __device__ vec3 value(float u, float v, const vec3& p) const override {
         return albedo;
@@ -31,16 +31,28 @@ class CheckerTexture : public Texture {
     Texture *odd;
 
 public:
-    __host__ __device__ CheckerTexture(float scale, Texture *even, Texture *odd) : inv_scale(1.0f / scale), even(even), odd(odd) {}
-    __host__ __device__ CheckerTexture(float scale, const vec3 &c1, const vec3 &c2) {
+    __host__ CheckerTexture(float scale, Texture *even, Texture *odd) : inv_scale(1.0f / scale), even(even), odd(odd) {}
+    __host__ CheckerTexture(float scale, const vec3 &c1, const vec3 &c2) {
         inv_scale = 1.0f / scale;
         even = new SolidTexture(c1);
         odd = new SolidTexture(c2);
+
+        Texture *host_even = new SolidTexture(c1);
+        Texture *host_odd = new SolidTexture(c2);
+
+        cudaMalloc(&even, sizeof(Texture));
+        cudaMalloc(&odd, sizeof(Texture));
+
+        cudaMemcpy(even, host_even, sizeof(Texture), cudaMemcpyHostToDevice);
+        cudaMemcpy(odd, host_odd, sizeof(Texture), cudaMemcpyHostToDevice);
+
+        delete host_even;
+        delete host_odd;
     }
 
-    __host__ __device__ ~CheckerTexture(){
-        delete even;
-        delete odd;
+    __host__ ~CheckerTexture(){
+        cudaFree(even);
+        cudaFree(odd);
     }
 
     __device__ vec3 value(float u, float v, const vec3 &p) const override {

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <thread>
 #include <algorithm>
+#include <limits>
 
 // #include <glm/glm.hpp>
 #include <vec.h>
@@ -251,7 +252,7 @@ public:
         return Ray(origin, direction);
     }
 
-    __device__ vec3 get_color(const BVH &bvh, const World &world, const Ray &r, int32_t depth) const {
+    __device__ vec3 get_color(const cuda_BVH &bvh, const cuda_World &world, const Ray &r, int32_t depth) const {
         if (depth <= 0) {
             return vec3(0.0, 0.0, 0.0);
         }

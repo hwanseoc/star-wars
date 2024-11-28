@@ -5,8 +5,8 @@
 // #include <glm/gtc/random.hpp>
 
 __host__ __device__ inline float random_float() {
-    static std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
-    static std::mt19937 generator;
+    std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+    std::mt19937 generator;
     return distribution(generator);
 }
 
