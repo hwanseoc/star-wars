@@ -14,6 +14,8 @@
 #include <bvh.h>
 #include <material.h>
 
+__global__  void render_kernel(cuda_BVH *bvh, int32_t height, int32_t width, vec3* image);
+
 class PerspectiveCamera {
     int32_t height, width, samples, max_depth;
     float focal_distance, defocus_angle;
@@ -139,95 +141,100 @@ public:
     }
 
 
-    // void render_gpu(std::vector<uint8_t> &image, const World& world) {
-    //     BVH bvh(world);
+    void render_gpu(std::vector<uint8_t> &image, const World& world) {
+        BVH bvh(world);
+        cuda_BVH *host_cuda_bvh = bvh.convertToDevice();
+        cuda_BVH *dev_cuda_bvh;
 
-    //     vec3 *host_image = (vec3 *)malloc(sizeof(vec3 ) * height * width);
-    //     vec3 *dev_image;
-    //     std::cout << "cuda malloc started" << std::endl;
-    //     cudaMalloc(&dev_image, sizeof(vec3) * height * width);
-    //     // cudaMemcpy(dev_image, host_image, sizeof(vec3) * height * width, cudaMemcpyHostToDevice);
+        cudaMalloc(&dev_cuda_bvh, sizeof(cuda_BVH));
+        cudaMemcpy(dev_cuda_bvh, host_cuda_bvh, sizeof(cuda_BVH), cudaMemcpyHostToDevice);
 
-    //     std::cout << "cuda malloc ended" << std::endl;
+        vec3 *host_image = (vec3 *)malloc(sizeof(vec3 ) * height * width);
+        vec3 *dev_image;
+        std::cout << "cuda malloc started" << std::endl;
+        cudaMalloc(&dev_image, sizeof(vec3) * height * width);
+        // cudaMemcpy(dev_image, host_image, sizeof(vec3) * height * width, cudaMemcpyHostToDevice);
 
-    //     World dev_world(world);
-    //     BVH dev_bvh(bvh);
+        std::cout << "cuda malloc ended" << std::endl;
 
-    //     dim3 threadsPerBlock(32, 32);
-    //     dim3 numBlocks((width - 1) / threadsPerBlock.x + 1, (height - 1) / threadsPerBlock.y + 1);
+        World dev_world(world);
+        BVH dev_bvh(bvh);
 
-    //     std::cout << "kernel started" << std::endl;
+        dim3 threadsPerBlock(32, 32);
+        dim3 numBlocks((width - 1) / threadsPerBlock.x + 1, (height - 1) / threadsPerBlock.y + 1);
 
-    //     render_kernel<<<numBlocks, threadsPerBlock>>>(bvh, world, height, width, dev_image);
+        std::cout << "kernel started" << std::endl;
 
-    //     std::cout << "kernel ended" << std::endl;
+        render_kernel<<<numBlocks, threadsPerBlock>>>(dev_cuda_bvh, height, width, dev_image);
 
-    //     cudaDeviceSynchronize();
+        std::cout << "kernel ended" << std::endl;
 
-    //     cudaMemcpy(host_image, dev_image, sizeof(vec3) * height * width, cudaMemcpyDeviceToHost);
+        cudaDeviceSynchronize();
+
+        cudaMemcpy(host_image, dev_image, sizeof(vec3) * height * width, cudaMemcpyDeviceToHost);
 
 
-    //     for (int32_t h = 0; h < height; ++h) {
-    //         for (int32_t w = 0; w < width; ++ w) {
-    //             vec3 pixel = host_image[h*width + w];
-    //             pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
-    //             pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
-    //             pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
+        for (int32_t h = 0; h < height; ++h) {
+            for (int32_t w = 0; w < width; ++ w) {
+                vec3 pixel = host_image[h*width + w];
+                pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
+                pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
+                pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
 
-    //             // clamp
-    //             pixel.x = std::clamp(pixel.x, 0.0f, 1.0f);
-    //             pixel.y = std::clamp(pixel.y, 0.0f, 1.0f);
-    //             pixel.z = std::clamp(pixel.z, 0.0f, 1.0f);
+                // clamp
+                pixel.x = std::clamp(pixel.x, 0.0f, 1.0f);
+                pixel.y = std::clamp(pixel.y, 0.0f, 1.0f);
+                pixel.z = std::clamp(pixel.z, 0.0f, 1.0f);
 
-    //             uint8_t ir = static_cast<uint8_t>(255.999f * pixel.x);
-    //             uint8_t ig = static_cast<uint8_t>(255.999f * pixel.y);
-    //             uint8_t ib = static_cast<uint8_t>(255.999f * pixel.z);
+                uint8_t ir = static_cast<uint8_t>(255.999f * pixel.x);
+                uint8_t ig = static_cast<uint8_t>(255.999f * pixel.y);
+                uint8_t ib = static_cast<uint8_t>(255.999f * pixel.z);
 
-    //             image[h * width * 4 + w * 4 + 0] = ir;
-    //             image[h * width * 4 + w * 4 + 1] = ig;
-    //             image[h * width * 4 + w * 4 + 2] = ib;
-    //             image[h * width * 4 + w * 4 + 3] = 255;
-    //         }
-    //     }
-    //     cudaFree(dev_image);
-    //     free(host_image);
-    //     // for (int32_t h = 0; h < height; ++h) {
-    //     //     for (int32_t w = 0; w < width; ++w) {
-    //     //         std::clog << "\rPixels processed: " << h * width + w + 1 << " out of " << height * width << std::flush;
+                image[h * width * 4 + w * 4 + 0] = ir;
+                image[h * width * 4 + w * 4 + 1] = ig;
+                image[h * width * 4 + w * 4 + 2] = ib;
+                image[h * width * 4 + w * 4 + 3] = 255;
+            }
+        }
+        cudaFree(dev_image);
+        free(host_image);
+        // for (int32_t h = 0; h < height; ++h) {
+        //     for (int32_t w = 0; w < width; ++w) {
+        //         std::clog << "\rPixels processed: " << h * width + w + 1 << " out of " << height * width << std::flush;
 
-    //     //         vec3 pixel(0.0, 0.0, 0.0);
+        //         vec3 pixel(0.0, 0.0, 0.0);
 
-    //     //         for (int32_t s = 0; s < samples; ++s) {
-    //     //             Ray r = this->get_ray(h, w);
-    //     //             vec3 sampled = get_color(bvh, world, r, 50);
-    //     //             pixel += sampled;
-    //     //         }
+        //         for (int32_t s = 0; s < samples; ++s) {
+        //             Ray r = this->get_ray(h, w);
+        //             vec3 sampled = get_color(bvh, world, r, 50);
+        //             pixel += sampled;
+        //         }
 
-    //     //         pixel /= samples;
+        //         pixel /= samples;
 
-    //     //         // linear to gamma
-    //     //         pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
-    //     //         pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
-    //     //         pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
+        //         // linear to gamma
+        //         pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
+        //         pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
+        //         pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
 
-    //     //         // clamp
-    //     //         pixel.x = std::clamp(pixel.x, 0.0f, 1.0f);
-    //     //         pixel.y = std::clamp(pixel.y, 0.0f, 1.0f);
-    //     //         pixel.z = std::clamp(pixel.z, 0.0f, 1.0f);
+        //         // clamp
+        //         pixel.x = std::clamp(pixel.x, 0.0f, 1.0f);
+        //         pixel.y = std::clamp(pixel.y, 0.0f, 1.0f);
+        //         pixel.z = std::clamp(pixel.z, 0.0f, 1.0f);
 
-    //     //         uint8_t ir = static_cast<uint8_t>(255.999f * pixel.x);
-    //     //         uint8_t ig = static_cast<uint8_t>(255.999f * pixel.y);
-    //     //         uint8_t ib = static_cast<uint8_t>(255.999f * pixel.z);
+        //         uint8_t ir = static_cast<uint8_t>(255.999f * pixel.x);
+        //         uint8_t ig = static_cast<uint8_t>(255.999f * pixel.y);
+        //         uint8_t ib = static_cast<uint8_t>(255.999f * pixel.z);
 
-    //     //         image[h * width * 4 + w * 4 + 0] = ir;
-    //     //         image[h * width * 4 + w * 4 + 1] = ig;
-    //     //         image[h * width * 4 + w * 4 + 2] = ib;
-    //     //         image[h * width * 4 + w * 4 + 3] = 255;
-    //     //     }
-    //     // }
+        //         image[h * width * 4 + w * 4 + 0] = ir;
+        //         image[h * width * 4 + w * 4 + 1] = ig;
+        //         image[h * width * 4 + w * 4 + 2] = ib;
+        //         image[h * width * 4 + w * 4 + 3] = 255;
+        //     }
+        // }
 
-    //     std::cout << std::endl;
-    // }
+        std::cout << std::endl;
+    }
 
 
 
@@ -280,13 +287,13 @@ public:
 };
 
 
-// __global__  void render_kernel(const BVH &bvh, const World &world, int32_t height, int32_t width, vec3* image) {
-//     int32_t w = blockIdx.x * blockDim.x + threadIdx.x;
-//     int32_t h = blockIdx.y * blockDim.y + threadIdx.y;
-//     if ( h < height && w < width) {
-//         image[h*width + w] = vec3(static_cast<float>(w) / static_cast<float>(width), static_cast<float>(h) / static_cast<float>(height), 0.0f);
-//     }
+__global__  void render_kernel(cuda_BVH *bvh, int32_t height, int32_t width, vec3* image) {
+    int32_t w = blockIdx.x * blockDim.x + threadIdx.x;
+    int32_t h = blockIdx.y * blockDim.y + threadIdx.y;
+    if ( h < height && w < width) {
+        image[h*width + w] = vec3(static_cast<float>(w) / static_cast<float>(width), static_cast<float>(h) / static_cast<float>(height), 0.0f);
+    }
 
-//     __syncthreads();
-// }
+    __syncthreads();
+}
 

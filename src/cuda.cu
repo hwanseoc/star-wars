@@ -234,7 +234,7 @@ int32_t main(int32_t argc, char *argv[]) {
     scene1(world, perspectiveCamera, height, width); // lots of balls
 
     // render
-    perspectiveCamera.render(image, world);
+    perspectiveCamera.render_gpu(image, world);
 
 
     ppm(image, height, width);
