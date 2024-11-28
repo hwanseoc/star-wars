@@ -223,8 +223,8 @@ int32_t main(int32_t argc, char *argv[]) {
     std::string filename = ss.str();
 
     // image resolution
-    int32_t width = 2560;
-    int32_t height = 1440;
+    int32_t width = 2560/8;
+    int32_t height = 1440/8;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // materials

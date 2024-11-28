@@ -8,12 +8,20 @@
 #include <ray.h>
 
 class Material;
+class cuda_Material;
 class Object;
+class cuda_Object;
 
 struct BVHHit {
     bool is_hit;
     float t;
     const Object* obj;
+};
+
+struct cuda_BVHHit {
+    bool is_hit;
+    float t;
+    cuda_Object* obj;
 };
 
 struct ColorHit {
@@ -23,6 +31,16 @@ struct ColorHit {
     float u; // texture x coord
     float v; // texture y coord
     Material *mat;
+    bool is_front;
+};
+
+struct cuda_ColorHit {
+    vec3 point;
+    vec3 normal;
+    vec3 direction;
+    float u; // texture x coord
+    float v; // texture y coord
+    cuda_Material *mat;
     bool is_front;
 };
 
@@ -80,6 +98,17 @@ public:
 
 };
 
+class cuda_Object {
+public:
+    virtual ~cuda_Object() = default;
+
+    virtual AABB aabb() const = 0;
+
+    __device__ virtual cuda_ColorHit hit(const cuda_BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const = 0;
+
+    __device__ virtual cuda_BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const = 0;
+};
+
 
 class Object {
 public:
@@ -90,22 +119,23 @@ public:
     virtual ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const = 0;
 
     virtual BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const = 0;
+
+    virtual cuda_Object *convertToDevice() = 0;
 };
 
 class World {
-    std::vector<const Object*> objects;
-    std::vector<const Material*> materials;
+    std::vector<Object*> objects;
+    std::vector<Material*> materials;
     AABB box_aabb;
 
 public:
     World() {}
 
-
     void destroy() {
-        for (const Object* &obj_ptr : objects) {
+        for (Object* &obj_ptr : objects) {
             delete obj_ptr;
         }
-        for (const Material* &mat_ptr : materials) {
+        for (Material* &mat_ptr : materials) {
             delete mat_ptr;
         }
     }
@@ -128,7 +158,7 @@ public:
         materials.push_back(mat);
     }
 
-    const std::vector<const Object*>& get_objects() const {
+    const std::vector<Object*>& get_objects() const {
         return objects;
     }
 };
