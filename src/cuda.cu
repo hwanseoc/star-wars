@@ -92,77 +92,30 @@ void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, 
     );
 
     // World
-    CheckerTexture *host_checker = new CheckerTexture(0.32, vec3(0.2, 0.3, 0.1), vec3(0.9, 0.9, 0.9));
-    CheckerTexture *checker;
-    cudaMalloc(&checker, sizeof(CheckerTexture));
-    cudaMemcpy(checker, host_checker, sizeof(CheckerTexture), cudaMemcpyHostToDevice);
-    delete host_checker;
+    CheckerTexture *checker = new CheckerTexture(0.32, vec3(0.2, 0.3, 0.1), vec3(0.9, 0.9, 0.9));
 
-    Material *host_material_ground = new Lambertian(checker);
-    Material *material_ground;
-    cudaMalloc(&material_ground, sizeof(Material));
-    cudaMemcpy(material_ground, host_material_ground, sizeof(Material), cudaMemcpyHostToDevice);
+    Material *material_ground = new Lambertian(checker);
     world.add_mat(material_ground);
-    delete host_material_ground;
 
-    Sphere *host_sphere_ground = new Sphere(vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
-    Sphere *sphere_ground;
-    cudaMalloc(&sphere_ground, sizeof(Sphere));
-    cudaMemcpy(sphere_ground, host_sphere_ground, sizeof(Sphere), cudaMemcpyHostToDevice);
+    Sphere sphere_ground(vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
     world.add(sphere_ground);
-    delete host_sphere_ground;
 
-
-    Material *material1;
-    Material *host_material1 = new Dielectric(1.5f);
-    cudaMalloc(&material1, sizeof(Material));
-    cudaMemcpy(material1, host_material1, sizeof(Material), cudaMemcpyHostToDevice);
-    delete host_material1;
+    Material *material1 = new Dielectric(1.5f);
     world.add_mat(material1);
-
-    Material *material2;
-    Material *host_material2 = new Metal(vec3(0.7, 0.6, 0.5), 0.0);
-    cudaMalloc(&material2, sizeof(Material));
-    cudaMemcpy(material2, host_material2, sizeof(Material), cudaMemcpyHostToDevice);
-    delete host_material2;
+    Material *material2 = new Metal(vec3(0.7, 0.6, 0.5), 0.0);
     world.add_mat(material2);
-
-    Material *material_light_yellow;
-    Material *host_material_light_yellow = new DiffuseLight(vec3(0.7, 0.7, 0.0));
-    cudaMalloc(&material_light_yellow, sizeof(Material));
-    cudaMemcpy(material_light_yellow, host_material_light_yellow, sizeof(Material), cudaMemcpyHostToDevice);
-    delete host_material_light_yellow;
+    Material *material_light_yellow = new DiffuseLight(vec3(0.7, 0.7, 0.0));
     world.add_mat(material_light_yellow);
-
-    Material *material_light_purple;
-    Material *host_material_light_purple = new DiffuseLight(vec3(0.7, 0.0, 0.7));
-    cudaMalloc(&material_light_purple, sizeof(Material));
-    cudaMemcpy(material_light_purple, material_light_purple, sizeof(Material), cudaMemcpyHostToDevice);
-    delete host_material_light_purple;
+    Material *material_light_purple = new DiffuseLight(vec3(0.7, 0.0, 0.7));
     world.add_mat(material_light_purple);
-
-
+    
     // std::shared_ptr<Material> material3 = std::make_shared<Lambertian>(earth_texture);
-    Sphere *host_sphere1 = new Sphere(vec3(-4.0, 1.0, 0.0), 1.0, material_light_yellow);
-    Sphere *sphere1;
-    cudaMalloc(&sphere1, sizeof(Sphere));
-    cudaMemcpy(sphere1, host_sphere1, sizeof(Sphere), cudaMemcpyHostToDevice);
+    Sphere sphere1(vec3(-4.0, 1.0, 0.0), 1.0, material_light_yellow);
+    Sphere sphere2(vec3(0.0, 1.0, 0.0), 1.0, material_light_purple);
+    Sphere sphere3(vec3(4.0, 1.0, 0.0), 1.0, material_light_yellow);
     world.add(sphere1);
-    delete host_sphere1;
-
-    Sphere *host_sphere2 = new Sphere(vec3(0.0, 1.0, 0.0), 1.0, material_light_purple);
-    Sphere *sphere2;
-    cudaMalloc(&sphere2, sizeof(Sphere));
-    cudaMemcpy(sphere2, host_sphere2, sizeof(Sphere), cudaMemcpyHostToDevice);
     world.add(sphere2);
-    delete host_sphere2;
-
-    Sphere *host_sphere3 = new Sphere(vec3(4.0, 1.0, 0.0), 1.0, material_light_yellow);
-    Sphere *sphere3;
-    cudaMalloc(&sphere3, sizeof(Sphere));
-    cudaMemcpy(sphere3, host_sphere3, sizeof(Sphere), cudaMemcpyHostToDevice);
     world.add(sphere3);
-    delete host_sphere3;
     // add_object(world, "data/prism.obj", vec3(4.0, 1.0, 0.0), vec3(0.0, 1.0, 0.0), 180.0f, vec3(0.8, 0.8, 0.8), material1);    
 
     for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
@@ -173,34 +126,23 @@ void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, 
 
             if (length(sphere_center - vec3(4, 0.2, 0.0)) > 0.9f) {
                 Material *material;
-                Material *host_material;
 
                 if (material_choice < 0.8f) {
                     // diffuse
                     vec3 albedo = vec3(random_float() * random_float(), random_float() * random_float(), random_float() * random_float());
-                    host_material = new Lambertian(albedo);
+                    material = new Lambertian(albedo);
                 } else if (material_choice < 0.95f) {
                     // metal
                     vec3 albedo = vec3(0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float());
                     float fuzz = random_float() * 0.5f;
-                    host_material = new Metal(albedo, fuzz);
+                    material = new Metal(albedo, fuzz);
                 } else {
                     // dielectric
-                    host_material = new Dielectric(1.5f);
+                    material = new Dielectric(1.5f);
                 }
-                cudaMalloc(&material, sizeof(Material));
-                cudaMemcpy(material, host_material, sizeof(Material), cudaMemcpyHostToDevice);
-
-                Sphere *sphere;
-                Sphere *host_sphere = new Sphere(sphere_center, 0.2, material);
-                cudaMalloc(&sphere, sizeof(Sphere));
-                cudaMemcpy(sphere, host_sphere, sizeof(Sphere), cudaMemcpyHostToDevice);
+                Sphere sphere(sphere_center, 0.2, material);
                 world.add(sphere);
                 world.add_mat(material);
-
-                delete host_sphere;
-                delete host_material;
-                
             }
         }
     }
@@ -283,8 +225,6 @@ int32_t main(int32_t argc, char *argv[]) {
     // image resolution
     int32_t width = 2560;
     int32_t height = 1440;
-    // int32_t width = 20;
-    // int32_t height = 20;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // materials
@@ -294,7 +234,7 @@ int32_t main(int32_t argc, char *argv[]) {
     scene1(world, perspectiveCamera, height, width); // lots of balls
 
     // render
-    perspectiveCamera.render_gpu(image, world);
+    perspectiveCamera.render(image, world);
 
 
     ppm(image, height, width);

@@ -14,9 +14,9 @@ class Sphere : public Object {
     Material *mat;
 
 public:
-    __host__ __device__ Sphere(const vec3 &origin, float radius, Material *mat) : origin(origin), radius(radius), mat(mat) {}
+    Sphere(const vec3 &origin, float radius, Material *mat) : origin(origin), radius(radius), mat(mat) {}
 
-    __device__ ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const override {
+    ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const override {
         ColorHit ret;
         ret.point = r.at(bvhhit.t);
         vec3 outward_normal = normalize((ret.point - origin) / radius);
@@ -34,7 +34,7 @@ public:
         return ret;
     }
 
-    __device__ BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const override {
+    BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const override {
         vec3 oc = origin - r.origin;
         float a = 1.0f;
         float h = dot(r.direction, oc);
@@ -64,7 +64,7 @@ public:
         return ret;
     }
 
-    __host__ __device__ AABB aabb() const override {
+    AABB aabb() const override {
         vec3 rvec(radius, radius, radius);
         return AABB(origin - rvec, origin + rvec);
     }

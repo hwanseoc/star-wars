@@ -29,13 +29,13 @@ class Triangle : public Object {
     Material *mat;
 
 public:
-    __host__ Triangle(const vec3 &v1, const vec3 &v2, const vec3 &v3, Material *mat) : v1(v1), v2(v2), v3(v3), mat(mat) {
+    Triangle(const vec3 &v1, const vec3 &v2, const vec3 &v3, Material *mat) : v1(v1), v2(v2), v3(v3), mat(mat) {
         vec3 u_edge = v2 - v1;
         vec3 v_edge = v3 - v1;
         normal = normalize(cross(u_edge, v_edge));
     }
 
-    __device__ ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const override {
+    ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const override {
         ColorHit ret;
         ret.point = r.at(bvhhit.t);
         ret.direction = random_hemisphere(ret.normal);
@@ -59,7 +59,7 @@ public:
         return ret;
     }
 
-    __device__ BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const override {
+    BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const override {
         BVHHit ret;
         ret.is_hit = false;
 
@@ -103,7 +103,7 @@ public:
         return ret;
     }
 
-    __host__ __device__ AABB aabb() const override {
+    AABB aabb() const override {
         vec3 min(
             std::min({v1.x, v2.x, v3.x}),
             std::min({v1.y, v2.y, v3.y}),
