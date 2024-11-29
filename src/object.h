@@ -7,6 +7,9 @@
 #include <random.h>
 #include <ray.h>
 
+#include <object.h>
+#include <sphere.h>
+
 class Material;
 class cuda_Material;
 class Object;
@@ -48,9 +51,9 @@ class AABB {
 public:
     vec3 box_aa, box_bb;
 
-    AABB() : box_aa(0.0f, 0.0f, 0.0f), box_bb(0.0f, 0.0f, 0.0f) {}
+    __host__ __device__ AABB() : box_aa(0.0f, 0.0f, 0.0f), box_bb(0.0f, 0.0f, 0.0f) {}
 
-    AABB(const vec3 &box_aa_, const vec3 &box_bb_) {
+    __host__ __device__ AABB(const vec3 &box_aa_, const vec3 &box_bb_) {
         constexpr float delta = 0.0001f;
         for (int32_t i = 0; i < 3; ++i){
             float dif = box_bb_[i] - box_aa_[i];
@@ -64,14 +67,14 @@ public:
         }
     }
 
-    AABB(const AABB &box0, const AABB &box1) {
+    __host__ __device__ AABB(const AABB &box0, const AABB &box1) {
         for (int32_t i = 0; i < 3; ++i){
             box_aa[i] = std::min(box0.box_aa[i], box1.box_aa[i]);
             box_bb[i] = std::max(box0.box_bb[i], box1.box_bb[i]);
         }
     }
 
-    bool hit(const Ray &r, float tmin, float tmax) const {
+    __host__ __device__ bool hit(const Ray &r, float tmin, float tmax) const {
         const vec3 &origin = r.origin;
         const vec3 &direction = r.direction;
 
@@ -145,12 +148,15 @@ public:
     }
 
     template <typename OBJ_T>
-    void add(OBJ_T &obj) {
-        OBJ_T *temp = new OBJ_T(obj);
+    void add(OBJ_T *obj) {
+        if (typeid(*obj) == typeid(Sphere)) {
+            printf("type sphere\n");
+        }else {
+            printf("what is this?\n");
+        }
+        objects.push_back(obj);
 
-        objects.push_back(temp);
-
-        box_aabb = AABB(box_aabb, temp->aabb());
+        box_aabb = AABB(box_aabb, obj->aabb());
     }
 
     template <typename MAT_T>

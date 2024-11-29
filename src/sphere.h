@@ -7,6 +7,7 @@
 #include <vec.h>
 
 #include <object.h>
+#include <material.h>
 
 
 class cuda_Sphere : public cuda_Object {
@@ -36,6 +37,7 @@ public:
     }
 
     __device__ cuda_BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const override {
+        printf("cuda_Spehre bvh_hit start\n");
         vec3 oc = origin - r.origin;
         float a = 1.0f;
         float h = dot(r.direction, oc);
@@ -142,7 +144,7 @@ public:
         return AABB(origin - rvec, origin + rvec);
     }
 
-    __host__ cuda_Object *convertToDevice() {
+    __host__ cuda_Sphere *convertToDevice() override {
         host_mat = mat->convertToDevice();
         cuda_Material *dev_mat;
         cudaMalloc(&dev_mat, sizeof(cuda_Material));

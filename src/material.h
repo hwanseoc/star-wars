@@ -4,10 +4,10 @@
 #include <object.h>
 #include <texture.h>
 
-
-
 class cuda_Material {
 public:
+    virtual ~cuda_Material() = default;
+
     __device__ virtual vec3 emitted(const cuda_ColorHit &hit) const {
         return vec3(0, 0, 0);
     }
@@ -22,6 +22,8 @@ public:
 
 class Material {
 public:
+    virtual ~Material() = default;
+
     __host__ virtual vec3 emitted(const ColorHit &hit) const {
         return vec3(0, 0, 0);
     }
@@ -32,7 +34,9 @@ public:
         scattered = Ray();
     }
 
-    __host__ virtual cuda_Material *convertToDevice() = 0;
+    __host__ virtual cuda_Material *convertToDevice() {
+        printf("this shouldn't be called\n");
+    }
 };
 
 
@@ -47,7 +51,7 @@ public:
         if(texture) cudaFree(texture);
     }
 
-    __device__ virtual void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
+    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
         vec3 scattered_direction = hit.normal + random_sphere();
 
         // Catch bad scatter direction
@@ -79,7 +83,7 @@ public:
         if(host_cuda_lambertian) delete host_cuda_lambertian;
     }
 
-    __host__ virtual void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override{
+    __host__ void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
         vec3 scattered_direction = hit.normal + random_sphere();
 
         // Catch bad scatter direction
@@ -93,7 +97,7 @@ public:
         attenuation = texture->value(hit.u, hit.v, hit.point);
     }
 
-    __host__ virtual cuda_Material *convertToDevice() override {
+    __host__ cuda_Lambertian *convertToDevice() override {
         host_texture = texture->convertToDevice();
         cuda_Texture *dev_texture;
         cudaMalloc(&dev_texture, sizeof(cuda_Texture));
@@ -116,7 +120,7 @@ class cuda_Metal : public cuda_Material {
 public:
     __host__ cuda_Metal(const vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
 
-    __device__ virtual void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
+    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
         vec3 reflected = reflect(r.direction, hit.normal);
         reflected = normalize(reflected) + random_sphere() * fuzz;
 
@@ -145,7 +149,7 @@ public:
         // delete host_cuda_metal;
     }
 
-    __host__ virtual void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
+    __host__ void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
         vec3 reflected = reflect(r.direction, hit.normal);
         reflected = normalize(reflected) + random_sphere() * fuzz;
 
@@ -154,7 +158,7 @@ public:
         is_scattered = dot(scattered.direction, hit.normal) > 0;
     }
 
-    __host__ virtual cuda_Material *convertToDevice() override {
+    __host__ cuda_Metal *convertToDevice() override {
         host_cuda_metal = new cuda_Metal(albedo, fuzz);
         cuda_Metal *dev_cuda_metal;
 
@@ -177,7 +181,7 @@ class cuda_Dielectric : public cuda_Material {
 public:
     __host__ cuda_Dielectric(float refractive_index) : refractive_index(refractive_index) {}
 
-    __device__ virtual void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
+    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
         float refractive_index_face = hit.is_front ? (1.0f / refractive_index) : refractive_index;
 
         float cos_theta = dot(-r.direction, hit.normal);
@@ -242,7 +246,7 @@ public:
         scattered = Ray(hit.point, direction);
     }
 
-    __host__ virtual cuda_Material *convertToDevice() override {
+    __host__ cuda_Dielectric *convertToDevice() override {
         host_cuda_dielectric = new cuda_Dielectric(refractive_index);
         cuda_Dielectric *dev_cuda_dielectric;
 
@@ -304,7 +308,7 @@ public:
         return texture->value(hit.u, hit.v, hit.point);
     }
 
-    __host__ virtual cuda_Material *convertToDevice() override {
+    __host__ cuda_DiffuseLight *convertToDevice() override {
         host_texture = texture->convertToDevice();
         cuda_Texture *dev_texture;
         cudaMalloc(&dev_texture, sizeof(cuda_Texture));

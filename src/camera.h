@@ -14,7 +14,8 @@
 #include <bvh.h>
 #include <material.h>
 
-__global__  void render_kernel(cuda_BVH *bvh, int32_t height, int32_t width, vec3* image);
+class PerspectiveCamera;
+__global__  void render_kernel(cuda_BVH *bvh, PerspectiveCamera *camera, int32_t height, int32_t width, vec3* image);
 
 class PerspectiveCamera {
     int32_t height, width, samples, max_depth;
@@ -146,6 +147,12 @@ public:
         cuda_BVH *host_cuda_bvh = bvh.convertToDevice();
         cuda_BVH *dev_cuda_bvh;
 
+        PerspectiveCamera *host_camera = this;
+        PerspectiveCamera *dev_camera;
+
+        cudaMalloc(&dev_camera, sizeof(PerspectiveCamera));
+        cudaMemcpy(dev_camera, host_camera, sizeof(PerspectiveCamera), cudaMemcpyHostToDevice);
+
         cudaMalloc(&dev_cuda_bvh, sizeof(cuda_BVH));
         cudaMemcpy(dev_cuda_bvh, host_cuda_bvh, sizeof(cuda_BVH), cudaMemcpyHostToDevice);
 
@@ -157,12 +164,12 @@ public:
 
         std::cout << "cuda malloc ended" << std::endl;
 
-        dim3 threadsPerBlock(32, 32);
+        dim3 threadsPerBlock(1, 1);
         dim3 numBlocks((width - 1) / threadsPerBlock.x + 1, (height - 1) / threadsPerBlock.y + 1);
 
         std::cout << "kernel started" << std::endl;
 
-        render_kernel<<<numBlocks, threadsPerBlock>>>(dev_cuda_bvh, height, width, dev_image);
+        render_kernel<<<numBlocks, threadsPerBlock>>>(dev_cuda_bvh, dev_camera, height, width, dev_image);
 
         std::cout << "kernel ended" << std::endl;
 
@@ -247,7 +254,6 @@ public:
             vec3 p = random_disk();
             origin = center + p.x * disk_u + p.y * disk_v;
         }
-
         vec3 direction = normalize(
             pixel00 + dv * random_h + du * random_w - origin
         );
@@ -255,12 +261,13 @@ public:
     }
 
     __device__ vec3 get_color(cuda_BVH *bvh, const Ray &r, int32_t depth) const {
+        printf("get_color start\n");
         if (depth <= 0) {
             return vec3(0.0, 0.0, 0.0);
         }
-
+        printf("get_color before bvh hit\n");
         cuda_BVHHit bvh_hit = bvh->hit(r, 0.001f, std::numeric_limits<float>::max());
-
+        printf("get_color after bvh hit\n");
         if (!bvh_hit.is_hit) {
             return vec3(0.0, 0.0, 0.0);
         }
@@ -284,13 +291,21 @@ public:
 };
 
 
-__global__  void render_kernel(cuda_BVH *bvh, int32_t height, int32_t width, vec3* image) {
+__global__  void render_kernel(cuda_BVH *bvh, PerspectiveCamera *camera, int32_t height, int32_t width, vec3* image) {
     int32_t w = blockIdx.x * blockDim.x + threadIdx.x;
     int32_t h = blockIdx.y * blockDim.y + threadIdx.y;
+    printf("%d %d\n",w,h);
     if ( h < height && w < width) {
         image[h*width + w] = vec3(static_cast<float>(w) / static_cast<float>(width), static_cast<float>(h) / static_cast<float>(height), 0.0f);
     }
 
+    Ray r = camera->get_ray(h, w);
+    printf("cuda inside kernel get ray ended\n");
+    vec3 sampled = camera->get_color(bvh, r, 50);
+    printf("cuda inside kernel\n");
+    printf("%f %f %f\n",sampled.x, sampled.y, sampled.z);
+
     __syncthreads();
+    printf("cuda outside kernel\n");
 }
 
