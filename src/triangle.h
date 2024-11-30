@@ -3,7 +3,6 @@
 #include <cmath>
 #include <numbers>
 
-// #include <glm/glm.hpp>
 #include <vec.h>
 #include <object.h>
 

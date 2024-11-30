@@ -4,12 +4,10 @@
 #include <thread>
 #include <algorithm>
 
-// #include <glm/glm.hpp>
 #include <vec.h>
-
 #include <random.h>
-
 #include <ray.h>
+
 #include <object.h>
 #include <bvh.h>
 #include <material.h>
@@ -164,7 +162,7 @@ public:
 
         std::cout << "cuda malloc ended" << std::endl;
 
-        dim3 threadsPerBlock(1, 1);
+        dim3 threadsPerBlock(16, 16);
         dim3 numBlocks((width - 1) / threadsPerBlock.x + 1, (height - 1) / threadsPerBlock.y + 1);
 
         std::cout << "kernel started" << std::endl;
@@ -174,6 +172,19 @@ public:
         std::cout << "kernel ended" << std::endl;
 
         cudaDeviceSynchronize();
+        cudaError_t err = cudaGetLastError();
+    	if (err != cudaSuccess) {
+		    printf("CUDA kernel launch failed: %s\n", cudaGetErrorString(err));
+		    return;
+    	}
+
+    	// Ensure kernel has completed before copying data back to host
+    	err = cudaDeviceSynchronize();
+    	if (err != cudaSuccess) {
+		    printf("CUDA synchronize failed: %s\n", cudaGetErrorString(err));
+		    return;
+    	}
+
 
         cudaMemcpy(host_image, dev_image, sizeof(vec3) * height * width, cudaMemcpyDeviceToHost);
 
@@ -261,26 +272,44 @@ public:
     }
 
     __device__ vec3 get_color(cuda_BVH *bvh, const Ray &r, int32_t depth) const {
-        printf("get_color start\n");
         if (depth <= 0) {
             return vec3(0.0, 0.0, 0.0);
         }
-        printf("get_color before bvh hit\n");
         cuda_BVHHit bvh_hit = bvh->hit(r, 0.001f, std::numeric_limits<float>::max());
-        printf("get_color after bvh hit\n");
         if (!bvh_hit.is_hit) {
             return vec3(0.0, 0.0, 0.0);
         }
-
-        const cuda_Object* obj = bvh_hit.obj;
-        cuda_ColorHit hit = obj->hit(bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
+        cuda_Object* obj = bvh_hit.obj;
+        cuda_ColorHit hit = ((cuda_Sphere *)obj)->hit(bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
 
         // bool is_scatter, vec3 attenuation, Ray ray_scatter
-        bool is_scatter;
-        vec3 attenuation;
-        Ray ray_scatter;
-        hit.mat->scatter(r, hit, is_scatter, attenuation, ray_scatter);
-        const vec3 color_emitted = hit.mat->emitted(hit);
+        bool is_scatter = false;
+        vec3 attenuation = vec3();
+        Ray ray_scatter = Ray();
+        vec3 color_emitted = vec3();
+
+        switch (hit.mat_type)
+        {
+        case MAT_TYPE_CUDA_DIELECTRIC:
+            ((cuda_Dielectric *)hit.mat)->scatter(r, hit, is_scatter, attenuation, ray_scatter);
+            break;
+        case MAT_TYPE_CUDA_DIFFUSELIGHT:
+            color_emitted = ((cuda_DiffuseLight *)hit.mat)->emitted(hit);
+            break;
+        case MAT_TYPE_CUDA_LAMBERTIAN:
+            ((cuda_Lambertian *)hit.mat)->scatter(r, hit, is_scatter, attenuation, ray_scatter);
+            break;
+        case MAT_TYPE_CUDA_METAL:
+            ((cuda_Metal *)hit.mat)->scatter(r, hit, is_scatter, attenuation, ray_scatter);
+            break;
+        
+        default:
+            printf("found wrong mat type\n");
+            // hit.mat->scatter(r, hit, is_scatter, attenuation, ray_scatter);
+            // color_emitted = hit.mat->emitted(hit);
+            break;
+        }
+        
 
         if (!is_scatter) {
             return color_emitted;
@@ -300,12 +329,9 @@ __global__  void render_kernel(cuda_BVH *bvh, PerspectiveCamera *camera, int32_t
     }
 
     Ray r = camera->get_ray(h, w);
-    printf("cuda inside kernel get ray ended\n");
     vec3 sampled = camera->get_color(bvh, r, 50);
-    printf("cuda inside kernel\n");
-    printf("%f %f %f\n",sampled.x, sampled.y, sampled.z);
+
 
     __syncthreads();
-    printf("cuda outside kernel\n");
 }
 

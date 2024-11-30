@@ -3,7 +3,6 @@
 #include <vector>
 #include <typeinfo>
 
-
 #include <object.h>
 #include <sphere.h>
 
@@ -21,6 +20,7 @@ struct cuda_BVHNode {
     AABB aabb;
     int64_t left;
     int64_t right;
+    int32_t obj_type;
     cuda_Object* obj;
 };
 
@@ -36,13 +36,11 @@ public:
     cuda_BVH(cuda_BVHNode *nodes, int32_t node_size, int64_t root) : nodes(nodes), node_size(node_size), root(root) {}
 
     __device__ cuda_BVHHit hit(const Ray &r, float tmin, float tmax) const {
-        printf("cuda_BVH hit start\n");
         return hit_recursive(r, tmin, tmax, root);
     }
 
 private:
     __device__ cuda_BVHHit hit_recursive(const Ray &r, float tmin, float tmax, int64_t parent_node) const {
-        printf("cuda_BVH hit_recursive start\n");
         cuda_BVHNode &node = nodes[parent_node];
 
         cuda_BVHHit bvhhit;
@@ -56,10 +54,18 @@ private:
 
         // object.hit
         if (node.is_leaf) {
-            printf("cuda_BVH hit_re object hit\n");
-            cuda_Sphere *object = (cuda_Sphere *)node.obj;
-            printf("cuda_BVH hit re object pointer\n");
-            bvhhit = object->bvh_hit(r, tmin, tmax);
+            cuda_Object *object = (cuda_Object *)node.obj;
+            switch (node.obj_type)
+            {
+            case OBJ_TYPE_CUDA_SPHERE:
+                bvhhit = ((cuda_Sphere *)object)->bvh_hit(r, tmin, tmax);
+                break;
+            
+            default:
+                printf("wrong type\n");
+                break;
+            }
+            
 
             if (bvhhit.is_hit){
                 bvhhit.obj = object;
@@ -102,11 +108,6 @@ public:
         const std::vector<Object*> &objects = w.get_objects();
 
         for (Object* obj : objects) {
-            if (typeid(obj) == typeid(Sphere)) {
-                printf("type sphere\n");
-            }else {
-                printf("what is this?\n");
-            }
             BVHNode node = {
                 .is_leaf = true,
                 .aabb = obj->aabb(),
@@ -232,6 +233,7 @@ public:
                     .aabb = nodes[i].aabb,
                     .left = nodes[i].left,
                     .right = nodes[i].right,
+                    .obj_type = nodes[i].obj->type(),
                     .obj = nodes[i].obj->convertToDevice()
                 };
             } else {

@@ -2,13 +2,15 @@
 
 #include <memory>
 
-// #include <glm/glm.hpp>
 #include <vec.h>
 #include <random.h>
 #include <ray.h>
 
 #include <object.h>
-#include <sphere.h>
+
+#define OBJ_TYPE_DEFAULT 0
+#define OBJ_TYPE_CUDA_SPHERE 1
+#define OBJ_TYPE_CUDA_TRIANGLE 2
 
 class Material;
 class cuda_Material;
@@ -25,6 +27,7 @@ struct cuda_BVHHit {
     bool is_hit;
     float t;
     cuda_Object* obj;
+    int32_t obj_type;
 };
 
 struct ColorHit {
@@ -44,6 +47,7 @@ struct cuda_ColorHit {
     float u; // texture x coord
     float v; // texture y coord
     cuda_Material *mat;
+    int32_t mat_type;
     bool is_front;
 };
 
@@ -101,16 +105,7 @@ public:
 
 };
 
-class cuda_Object {
-public:
-    virtual ~cuda_Object() = default;
-
-    virtual AABB aabb() const = 0;
-
-    __device__ virtual cuda_ColorHit hit(const cuda_BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const = 0;
-
-    __device__ virtual cuda_BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const = 0;
-};
+class cuda_Object {};
 
 
 class Object {
@@ -124,6 +119,10 @@ public:
     virtual BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const = 0;
 
     virtual cuda_Object *convertToDevice() = 0;
+
+    virtual int32_t type() const {
+        return OBJ_TYPE_DEFAULT;
+    }
 };
 
 class World {
@@ -149,18 +148,13 @@ public:
 
     template <typename OBJ_T>
     void add(OBJ_T *obj) {
-        if (typeid(*obj) == typeid(Sphere)) {
-            printf("type sphere\n");
-        }else {
-            printf("what is this?\n");
-        }
         objects.push_back(obj);
 
         box_aabb = AABB(box_aabb, obj->aabb());
     }
 
     template <typename MAT_T>
-    void add_mat(MAT_T mat) {
+    void add_mat(MAT_T *mat) {
         materials.push_back(mat);
     }
 

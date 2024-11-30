@@ -4,38 +4,33 @@
 #include <object.h>
 #include <texture.h>
 
-class cuda_Material {
-public:
-    virtual ~cuda_Material() = default;
+#define MAT_TYPE_DEFAULT 0
+#define MAT_TYPE_CUDA_LAMBERTIAN 1
+#define MAT_TYPE_CUDA_METAL 2
+#define MAT_TYPE_CUDA_DIELECTRIC 3
+#define MAT_TYPE_CUDA_DIFFUSELIGHT 4
 
-    __device__ virtual vec3 emitted(const cuda_ColorHit &hit) const {
-        return vec3(0, 0, 0);
-    }
-
-    __device__ virtual void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
-        is_scattered = false;
-        attenuation = vec3(0, 0, 0);
-        scattered = Ray();
-    }
-};
+class cuda_Material {};
 
 
 class Material {
 public:
     virtual ~Material() = default;
 
-    __host__ virtual vec3 emitted(const ColorHit &hit) const {
+    virtual vec3 emitted(const ColorHit &hit) const {
         return vec3(0, 0, 0);
     }
 
-    __host__ virtual void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
+    virtual void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
         is_scattered = false;
         attenuation = vec3(0, 0, 0);
         scattered = Ray();
     }
 
-    __host__ virtual cuda_Material *convertToDevice() {
-        printf("this shouldn't be called\n");
+    virtual cuda_Material *convertToDevice() = 0;
+
+    virtual int32_t type() const {
+        return MAT_TYPE_DEFAULT;
     }
 };
 
@@ -43,15 +38,16 @@ public:
 
 class cuda_Lambertian : public cuda_Material {
     cuda_Texture *texture;
+    int32_t tex_type;
 
 public:
-    __host__ cuda_Lambertian(cuda_Texture *texture) : texture(texture) {}
+    __host__ cuda_Lambertian(cuda_Texture *texture, int32_t tex_type) : texture(texture), tex_type(tex_type) {}
 
     __host__ ~cuda_Lambertian(){
         if(texture) cudaFree(texture);
     }
 
-    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
+    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
         vec3 scattered_direction = hit.normal + random_sphere();
 
         // Catch bad scatter direction
@@ -62,7 +58,17 @@ public:
         }
         is_scattered = true;
         scattered = Ray(hit.point, normalize(scattered_direction));
-        attenuation = texture->value(hit.u, hit.v, hit.point);
+        switch (tex_type)
+        {
+        case TEX_TYPE_SOLIDTEXTURE:
+            attenuation = ((cuda_SolidTexture *)texture)->value(hit.u, hit.v, hit.point);
+            break;
+        case TEX_TYPE_CHECKERTEXTURE:
+            attenuation = ((cuda_CheckerTexture *)texture)->value(hit.u, hit.v, hit.point);
+            break;
+        default:
+            break;
+        }
     }
 };
 
@@ -72,18 +78,18 @@ class Lambertian : public Material {
     cuda_Texture *host_texture;
     cuda_Lambertian *host_cuda_lambertian;
 public:
-    __host__ Lambertian(const vec3 albedo) {
+    Lambertian(const vec3 albedo) {
         texture = new SolidTexture(albedo);
     }
-    __host__ Lambertian(Texture *texture) :  texture(texture) {}
+    Lambertian(Texture *texture) :  texture(texture) {}
 
-    __host__ ~Lambertian(){
+    ~Lambertian(){
         if(texture) delete texture;
         if(host_texture) delete host_texture;
         if(host_cuda_lambertian) delete host_cuda_lambertian;
     }
 
-    __host__ void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
+    void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
         vec3 scattered_direction = hit.normal + random_sphere();
 
         // Catch bad scatter direction
@@ -97,19 +103,23 @@ public:
         attenuation = texture->value(hit.u, hit.v, hit.point);
     }
 
-    __host__ cuda_Lambertian *convertToDevice() override {
+    cuda_Lambertian *convertToDevice() override {
         host_texture = texture->convertToDevice();
         cuda_Texture *dev_texture;
         cudaMalloc(&dev_texture, sizeof(cuda_Texture));
         cudaMemcpy(dev_texture, host_texture, sizeof(cuda_Texture), cudaMemcpyHostToDevice);
 
-        host_cuda_lambertian = new cuda_Lambertian(dev_texture);
+        host_cuda_lambertian = new cuda_Lambertian(dev_texture, texture->type());
         cuda_Lambertian *dev_cuda_lambertian;
 
         cudaMalloc(&dev_cuda_lambertian, sizeof(cuda_Lambertian));
         cudaMemcpy(dev_cuda_lambertian, host_cuda_lambertian, sizeof(cuda_Lambertian), cudaMemcpyHostToDevice);
 
         return dev_cuda_lambertian;
+    }
+
+    int32_t type() const override {
+        return MAT_TYPE_CUDA_LAMBERTIAN;
     }
 };
 
@@ -120,7 +130,7 @@ class cuda_Metal : public cuda_Material {
 public:
     __host__ cuda_Metal(const vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
 
-    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
+    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
         vec3 reflected = reflect(r.direction, hit.normal);
         reflected = normalize(reflected) + random_sphere() * fuzz;
 
@@ -143,13 +153,13 @@ class Metal : public Material {
     cuda_Metal *host_cuda_metal;
 
 public:
-    __host__ Metal(const vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
+    Metal(const vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
 
-    __host__ ~Metal() {
+    ~Metal() {
         // delete host_cuda_metal;
     }
 
-    __host__ void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
+    void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
         vec3 reflected = reflect(r.direction, hit.normal);
         reflected = normalize(reflected) + random_sphere() * fuzz;
 
@@ -158,7 +168,7 @@ public:
         is_scattered = dot(scattered.direction, hit.normal) > 0;
     }
 
-    __host__ cuda_Metal *convertToDevice() override {
+    cuda_Metal *convertToDevice() override {
         host_cuda_metal = new cuda_Metal(albedo, fuzz);
         cuda_Metal *dev_cuda_metal;
 
@@ -166,6 +176,9 @@ public:
         cudaMemcpy(dev_cuda_metal, host_cuda_metal, sizeof(cuda_Metal), cudaMemcpyHostToDevice);
 
         return dev_cuda_metal;
+    }
+    int32_t type() const override {
+        return MAT_TYPE_CUDA_METAL;
     }
     
 
@@ -181,7 +194,7 @@ class cuda_Dielectric : public cuda_Material {
 public:
     __host__ cuda_Dielectric(float refractive_index) : refractive_index(refractive_index) {}
 
-    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
+    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
         float refractive_index_face = hit.is_front ? (1.0f / refractive_index) : refractive_index;
 
         float cos_theta = dot(-r.direction, hit.normal);
@@ -222,13 +235,13 @@ class Dielectric : public Material {
     cuda_Dielectric *host_cuda_dielectric;
 
 public:
-    __host__ Dielectric(float refractive_index) : refractive_index(refractive_index) {}
+    Dielectric(float refractive_index) : refractive_index(refractive_index) {}
 
-    __host__ ~Dielectric() {
+    ~Dielectric() {
         // delete host_cuda_dielectric;
     }
 
-    __host__ virtual void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
+    void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
         float refractive_index_face = hit.is_front ? (1.0f / refractive_index) : refractive_index;
 
         float cos_theta = dot(-r.direction, hit.normal);
@@ -246,7 +259,7 @@ public:
         scattered = Ray(hit.point, direction);
     }
 
-    __host__ cuda_Dielectric *convertToDevice() override {
+    cuda_Dielectric *convertToDevice() override {
         host_cuda_dielectric = new cuda_Dielectric(refractive_index);
         cuda_Dielectric *dev_cuda_dielectric;
 
@@ -254,6 +267,10 @@ public:
         cudaMemcpy(dev_cuda_dielectric, host_cuda_dielectric, sizeof(cuda_Dielectric), cudaMemcpyHostToDevice);
 
         return dev_cuda_dielectric;
+    }
+
+    int32_t type() const override {
+        return MAT_TYPE_CUDA_DIELECTRIC;
     }
 private:
     inline vec3 refract(const vec3 &direction, const vec3 &normal, float refractive_index_face) const {
@@ -276,15 +293,28 @@ private:
 
 class cuda_DiffuseLight : public cuda_Material {
     cuda_Texture *texture;
+    int32_t tex_type;
 
 public:
-    __host__ cuda_DiffuseLight(cuda_Texture *texture) : texture(texture) {}
+    __host__ cuda_DiffuseLight(cuda_Texture *texture, int32_t tex_type) : texture(texture), tex_type(tex_type) {}
     __host__ ~cuda_DiffuseLight(){
         // delete texture;
     }
 
-    __device__ vec3 emitted(const cuda_ColorHit &hit) const override {
-        return texture->value(hit.u, hit.v, hit.point);
+    __device__ vec3 emitted(const cuda_ColorHit &hit) const {
+        vec3 ret_vec = vec3();
+        switch (tex_type)
+        {
+        case TEX_TYPE_SOLIDTEXTURE:
+            ret_vec = ((cuda_SolidTexture *)texture)->value(hit.u, hit.v, hit.point);
+            break;
+        case TEX_TYPE_CHECKERTEXTURE:
+            ret_vec = ((cuda_CheckerTexture *)texture)->value(hit.u, hit.v, hit.point);
+            break;
+        default:
+            break;
+        }
+        return ret_vec;
     }
 };
 
@@ -308,18 +338,22 @@ public:
         return texture->value(hit.u, hit.v, hit.point);
     }
 
-    __host__ cuda_DiffuseLight *convertToDevice() override {
+    cuda_DiffuseLight *convertToDevice() override {
         host_texture = texture->convertToDevice();
         cuda_Texture *dev_texture;
         cudaMalloc(&dev_texture, sizeof(cuda_Texture));
         cudaMemcpy(dev_texture, host_texture, sizeof(cuda_Texture), cudaMemcpyHostToDevice);
 
-        host_cuda_diffuselight = new cuda_DiffuseLight(dev_texture);
+        host_cuda_diffuselight = new cuda_DiffuseLight(dev_texture, texture->type());
         cuda_DiffuseLight *dev_cuda_diffuselight;
 
         cudaMalloc(&dev_cuda_diffuselight, sizeof(cuda_DiffuseLight));
         cudaMemcpy(dev_cuda_diffuselight, host_cuda_diffuselight, sizeof(cuda_DiffuseLight), cudaMemcpyHostToDevice);
 
         return dev_cuda_diffuselight;
+    }
+
+    int32_t type() const override {
+        return MAT_TYPE_CUDA_DIFFUSELIGHT;
     }
 };
