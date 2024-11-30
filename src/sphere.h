@@ -19,13 +19,13 @@ class cuda_Sphere : public cuda_Object {
 public:
     __host__ cuda_Sphere(const vec3 &origin, float radius, cuda_Material *mat, int32_t mat_type) : origin(origin), radius(radius), mat(mat), mat_type(mat_type) {}
 
-    __device__ cuda_ColorHit hit(const cuda_BVHHit &bvhhit, const Ray &r, float tmin, float tmax) {
+    __device__ cuda_ColorHit hit(curandState *state, const cuda_BVHHit &bvhhit, const Ray &r, float tmin, float tmax) {
         cuda_ColorHit ret;
         ret.point = r.at(bvhhit.t);
         vec3 outward_normal = normalize((ret.point - origin) / radius);
         ret.is_front = dot(r.direction, outward_normal) < 0.0f;
         ret.normal = ret.is_front ? outward_normal : -outward_normal;
-        ret.direction = random_hemisphere(ret.normal);
+        ret.direction = cuda_random_hemisphere(state, ret.normal);
         ret.mat = mat;
         ret.mat_type = mat_type;
         float theta = std::acos(-outward_normal.y);

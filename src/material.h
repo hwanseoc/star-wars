@@ -47,8 +47,8 @@ public:
         if(texture) cudaFree(texture);
     }
 
-    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
-        vec3 scattered_direction = hit.normal + random_sphere();
+    __device__ void scatter(curandState *state, const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
+        vec3 scattered_direction = hit.normal + cuda_random_sphere(state);
 
         // Catch bad scatter direction
         if (std::fabs(scattered_direction.x) < 1e-8f &&
@@ -130,9 +130,9 @@ class cuda_Metal : public cuda_Material {
 public:
     __host__ cuda_Metal(const vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
 
-    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
+    __device__ void scatter(curandState *state, const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
         vec3 reflected = reflect(r.direction, hit.normal);
-        reflected = normalize(reflected) + random_sphere() * fuzz;
+        reflected = normalize(reflected) + cuda_random_sphere(state) * fuzz;
 
         scattered = Ray(hit.point, normalize(reflected));
         attenuation = albedo;
@@ -194,14 +194,14 @@ class cuda_Dielectric : public cuda_Material {
 public:
     __host__ cuda_Dielectric(float refractive_index) : refractive_index(refractive_index) {}
 
-    __device__ void scatter(const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
+    __device__ void scatter(curandState *state, const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
         float refractive_index_face = hit.is_front ? (1.0f / refractive_index) : refractive_index;
 
         float cos_theta = dot(-r.direction, hit.normal);
         float sin_theta = std::sqrt(1.0f - cos_theta * cos_theta);
 
         vec3 direction;
-        if (refractive_index_face * sin_theta > 1.0f || schlick_reflectance(cos_theta, refractive_index_face) > random_float()) {
+        if (refractive_index_face * sin_theta > 1.0f || schlick_reflectance(cos_theta, refractive_index_face) > cuda_random_float(state)) {
             direction = reflect(r.direction, hit.normal);
         } else {
             direction = refract(r.direction, hit.normal, refractive_index_face);
