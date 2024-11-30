@@ -98,8 +98,8 @@ public:
         int32_t odd_tex_type
     ) : inv_scale(inv_scale), even(even), even_tex_type(even_tex_type), odd(odd), odd_tex_type(odd_tex_type) {}
     __host__ ~cuda_CheckerTexture(){
-        cudaFree(even);
-        cudaFree(odd);
+        // cudaFree(even);
+        // cudaFree(odd);
     }
 
     __device__ vec3 value(float u, float v, const vec3 &p) const {

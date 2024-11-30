@@ -4,13 +4,11 @@
 #include <curand_kernel.h>
 #include <vec.h>
 
-__global__ void initCurandStates(curandState *states, unsigned long seed, int32_t height, int32_t width) {
-    int32_t w = blockIdx.x * blockDim.x + threadIdx.x;
-    int32_t h = blockIdx.y * blockDim.y + threadIdx.y;
-    int32_t id = h * width + w;
-    if(h < height && w < width){
-        curand_init(seed, id, 0, &states[id]);
-    }
+__global__ void initCurandStates(curandState *states, unsigned long seed, int32_t x_dim) {
+    int32_t x = blockIdx.x * blockDim.x + threadIdx.x;
+    int32_t y = blockIdx.y * blockDim.y + threadIdx.y;
+    int32_t id = y * x_dim + x;
+    curand_init(seed, id, 0, &states[id]);
 }
 
 __device__ inline float cuda_random_float(curandState *state) {

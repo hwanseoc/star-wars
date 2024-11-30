@@ -44,7 +44,7 @@ public:
     __host__ cuda_Lambertian(cuda_Texture *texture, int32_t tex_type) : texture(texture), tex_type(tex_type) {}
 
     __host__ ~cuda_Lambertian(){
-        if(texture) cudaFree(texture);
+        // if(texture) cudaFree(texture);
     }
 
     __device__ void scatter(curandState *state, const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {

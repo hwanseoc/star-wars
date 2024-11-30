@@ -226,8 +226,8 @@ int32_t main(int32_t argc, char *argv[]) {
     // image resolution
     // int32_t width = 2560;
     // int32_t height = 1440;
-    int32_t width = 100;
-    int32_t height = 100;
+    int32_t width = 30;
+    int32_t height = 30;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // materials

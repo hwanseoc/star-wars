@@ -1,0 +1,137 @@
+render_gpu	started
+render_gpu	curand init
+xdim30
+render_gpu	kernel started
+render_gpu	kernel ended
+22 4	 before ray
+22 4	 before color
+raydir -0.957315 -0.288917 -0.008611
+664 3 get color	 before bvh hit
+root is 6
+before nodes[par]
+pn = 6
+inside bvh hit_re
+inside bvh hit_re after aabb
+node ptr 0x716058c0ab80
+pn = 6
+node info [6][0 4]
+inside bvh hit_re not leaf
+inside bvh hit_re not leaf left 0.001000 340282346638528859811704183484516925440.000000 4
+before nodes[par]
+pn = 4
+inside bvh hit_re
+inside bvh hit_re after aabb
+node ptr 0x716058c0ab00
+pn = 4
+node info [4][0 0]
+inside bvh hit_re not leaf
+inside bvh hit_re not leaf left 0.001000 340282346638528859811704183484516925440.000000 0
+before nodes[par]
+pn = 0
+inside bvh hit_re
+inside bvh hit_re after aabb
+node ptr 0x716058c0aa00
+pn = 0
+node info [0][0 0]
+inside bvh hit_re node is leaf
+inside bvh hit_re after ptr access
+obj type:1
+664cuda_bvh check obj hit
+664cuda_sphere bvh hit done
+bvh hit_re returned
+inside bvh hit_re not leaf left ended
+inside bvh hit_re not leaf right
+before nodes[par]
+pn = 1
+inside bvh hit_re
+inside bvh hit_re not right ended
+inside bvh hit_re not leaf left ended
+inside bvh hit_re not leaf right
+before nodes[par]
+pn = 5
+inside bvh hit_re
+inside bvh hit_re not right ended
+664 3 get color	 before color hit
+insdie cudaSphere color hit
+insdie cudaSphere color hit before mat
+insdie cudaSphere color hit after mat copy
+insdie cudaSphere color hit after std::pi
+insdie cudaSphere color hit right before ret
+0.430893 0.997775
+664 3 get color	 after color hit
+664 3get color	 before mat hit
+mat_type1
+664 3 get color	 after mat hit
+raydir 0.300821 0.060317 -0.951771
+664 2 get color	 before bvh hit
+root is 6
+before nodes[par]
+pn = 6
+inside bvh hit_re
+inside bvh hit_re after aabb
+node ptr 0x716058c0ab80
+pn = 6
+node info [6][0 4]
+inside bvh hit_re not leaf
+inside bvh hit_re not leaf left 0.001000 340282346638528859811704183484516925440.000000 4
+before nodes[par]
+pn = 4
+inside bvh hit_re
+inside bvh hit_re after aabb
+node ptr 0x716058c0ab00
+pn = 4
+node info [4][0 0]
+inside bvh hit_re not leaf
+inside bvh hit_re not leaf left 0.001000 340282346638528859811704183484516925440.000000 0
+before nodes[par]
+pn = 0
+inside bvh hit_re
+inside bvh hit_re after aabb
+node ptr 0x716058c0aa00
+pn = 0
+node info [0][0 0]
+inside bvh hit_re node is leaf
+inside bvh hit_re after ptr access
+obj type:1
+664cuda_bvh check obj hit
+664cuda_sphere bvh hit done
+bvh hit_re returned
+inside bvh hit_re not leaf left ended
+inside bvh hit_re not leaf right
+before nodes[par]
+pn = 1
+inside bvh hit_re
+inside bvh hit_re not right ended
+inside bvh hit_re not leaf left ended
+inside bvh hit_re not leaf right
+before nodes[par]
+pn = 5
+inside bvh hit_re
+inside bvh hit_re not right ended
+664 2 get color	 before color hit
+insdie cudaSphere color hit
+insdie cudaSphere color hit before mat
+insdie cudaSphere color hit after mat copy
+insdie cudaSphere color hit after std::pi
+insdie cudaSphere color hit right before ret
+0.430917 0.997772
+664 2 get color	 after color hit
+664 2get color	 before mat hit
+mat_type1
+664 2 get color	 after mat hit
+raydir 0.546591 -0.505696 0.667466
+664 1 get color	 before bvh hit
+root is 6
+before nodes[par]
+pn = 6
+inside bvh hit_re
+inside bvh hit_re after aabb
+node ptr 0x716058c0ab80
+pn = 6
+node info [6][0 4]
+inside bvh hit_re not leaf
+inside bvh hit_re not leaf left 0.001000 340282346638528859811704183484516925440.000000 4
+before nodes[par]
+CUDA kernel launch failed: an illegal memory access was encountered
+
+Execution time: 0.0583988 seconds
