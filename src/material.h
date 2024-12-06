@@ -104,12 +104,7 @@ public:
     }
 
     cuda_Lambertian *convertToDevice() override {
-        host_texture = texture->convertToDevice();
-        cuda_Texture *dev_texture;
-        cudaMalloc(&dev_texture, sizeof(cuda_Texture));
-        cudaMemcpy(dev_texture, host_texture, sizeof(cuda_Texture), cudaMemcpyHostToDevice);
-
-        host_cuda_lambertian = new cuda_Lambertian(dev_texture, texture->type());
+        host_cuda_lambertian = new cuda_Lambertian(texture->convertToDevice(), texture->type());
         cuda_Lambertian *dev_cuda_lambertian;
 
         cudaMalloc(&dev_cuda_lambertian, sizeof(cuda_Lambertian));
@@ -312,6 +307,7 @@ public:
             ret_vec = ((cuda_CheckerTexture *)texture)->value(hit.u, hit.v, hit.point);
             break;
         default:
+            // printf("wrong type\n");
             break;
         }
         return ret_vec;
@@ -339,12 +335,7 @@ public:
     }
 
     cuda_DiffuseLight *convertToDevice() override {
-        host_texture = texture->convertToDevice();
-        cuda_Texture *dev_texture;
-        cudaMalloc(&dev_texture, sizeof(cuda_Texture));
-        cudaMemcpy(dev_texture, host_texture, sizeof(cuda_Texture), cudaMemcpyHostToDevice);
-
-        host_cuda_diffuselight = new cuda_DiffuseLight(dev_texture, texture->type());
+        host_cuda_diffuselight = new cuda_DiffuseLight(texture->convertToDevice(), texture->type());
         cuda_DiffuseLight *dev_cuda_diffuselight;
 
         cudaMalloc(&dev_cuda_diffuselight, sizeof(cuda_DiffuseLight));

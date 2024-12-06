@@ -55,6 +55,10 @@ public:
     __host__ __device__ float length_squared() const {
         return x*x + y*y + z*z;
     }
+
+    __host__ __device__ void printVec() const {
+        printf("(%f %f %f)\n", x, y, z);
+    }
 };
 
 __host__ __device__ inline vec3 operator+(const vec3& u, const vec3& v) {

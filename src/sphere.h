@@ -41,7 +41,7 @@ public:
         return ret;
     }
 
-    __device__ cuda_BVHHit bvh_hit(int32_t id, const Ray &r, float tmin, float tmax) {
+    __device__ cuda_BVHHit bvh_hit(const Ray &r, float tmin, float tmax) {
         vec3 oc = origin - r.origin;
         float a = 1.0f;
         float h = dot(r.direction, oc);
@@ -67,7 +67,6 @@ public:
 
         ret.is_hit = true;
         ret.t = t;
-        //printf("%dcuda_sphere bvh hit done\n",id);
         return ret;
     }
 
@@ -102,12 +101,13 @@ public:
 
     __host__ cuda_Sphere *convertToDevice() override {
         //printf("inside cuda_sphere convert\n");
-        host_mat = mat->convertToDevice();
-        cuda_Material *dev_mat;
-        cudaMalloc(&dev_mat, sizeof(cuda_Material));
-        cudaMemcpy(dev_mat, host_mat, sizeof(cuda_Material), cudaMemcpyHostToDevice);
+        // host_mat = mat->convertToDevice();
+        // cuda_Material *dev_mat;
+        // cudaMalloc(&dev_mat, sizeof(cuda_Material));
+        // cudaMemcpy(dev_mat, host_mat, sizeof(cuda_Material), cudaMemcpyHostToDevice);
 
-        host_cuda_obj = new cuda_Sphere(origin, radius, dev_mat, mat->type());
+        // host_cuda_obj = new cuda_Sphere(origin, radius, dev_mat, mat->type());
+        host_cuda_obj = new cuda_Sphere(origin, radius, mat->convertToDevice(), mat->type());
         cuda_Sphere *dev_cuda_obj;
         cudaMalloc(&dev_cuda_obj, sizeof(cuda_Sphere));
         cudaMemcpy(dev_cuda_obj, host_cuda_obj, sizeof(cuda_Sphere), cudaMemcpyHostToDevice);

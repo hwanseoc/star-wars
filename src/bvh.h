@@ -35,18 +35,13 @@ public:
     cuda_BVH() {}
     cuda_BVH(cuda_BVHNode *nodes, int32_t node_size, int64_t root) : nodes(nodes), node_size(node_size), root(root) {}
 
-    __device__ cuda_BVHHit hit(int32_t id, const Ray &r, float tmin, float tmax) {
-        //printf("root is %d\n",root);
-        return hit_recursive(id, r, tmin, tmax, root);
+    __device__ cuda_BVHHit hit(const Ray &r, float tmin, float tmax) {
+        return hit_recursive(r, tmin, tmax, root);
     }
 
 private:
-    __device__ cuda_BVHHit hit_recursive(int32_t id, const Ray &r, float tmin, float tmax, int64_t parent_node) {
-
-        //printf("before nodes[par]\n");
-        //printf("pn = %d\n",parent_node);
+    __device__ cuda_BVHHit hit_recursive(const Ray &r, float tmin, float tmax, int64_t parent_node) {
         cuda_BVHNode *node = &nodes[parent_node];
-        //printf("inside bvh hit_re\n");
 
         // if not node.hit
         if (!node->aabb.hit(r, tmin, tmax)) {
@@ -55,16 +50,9 @@ private:
             bvhhit.t = 0.0f;
             return bvhhit;
         }
-        //printf("inside bvh hit_re after aabb\n");
-        //printf("node ptr %p\n",node);
-        //printf("pn = %d\n",parent_node);
-        //printf("node info [%d][%d %d]\n", parent_node, node->left, node->right);
-        // object.hit
+
         if (node->is_leaf) {
-            //printf("inside bvh hit_re node is leaf\n");
             cuda_Object *object;
-            //printf("inside bvh hit_re after ptr access\n");
-            //printf("obj type:%d\n",node->obj_type);
 
             cuda_BVHHit bvhhit;
             bvhhit.is_hit = false;
@@ -72,35 +60,27 @@ private:
             switch (node->obj_type)
             {
             case OBJ_TYPE_CUDA_SPHERE:
-                //printf("%dcuda_bvh check obj hit\n",id);
-                bvhhit = ((cuda_Sphere *)node->obj)->bvh_hit(id, r, tmin, tmax);
+                bvhhit = ((cuda_Sphere *)node->obj)->bvh_hit(r, tmin, tmax);
                 break;
             
             default:
-                //printf("wrong type\n");
+                printf("wrong type\n");
                 break;
-            }
-            
+            }           
 
             if (bvhhit.is_hit){
                 bvhhit.obj = node->obj;
                 bvhhit.obj_type = node->obj_type;
             }
-            //printf("bvh hit_re returned\n");
             return bvhhit;
         } else {
-            //printf("inside bvh hit_re not leaf\n");
             // TODO : make sure hit_right does not have dependency on hit_left,
             // so that we can parallelize hit_left and hit_right
-            //printf("inside bvh hit_re not leaf left %f %f %d\n",tmin, tmax, node->left);
-            cuda_BVHHit bvhhit_left = hit_recursive(id, r, tmin, tmax, node->left);
-            //printf("inside bvh hit_re not leaf left ended\n");
+            cuda_BVHHit bvhhit_left = hit_recursive(r, tmin, tmax, node->left);
             if (bvhhit_left.is_hit) {
                 tmax = bvhhit_left.t;
             }
-            //printf("inside bvh hit_re not leaf right\n");
-            cuda_BVHHit bvhhit_right = hit_recursive(id, r, tmin, tmax, node->right);
-            //printf("inside bvh hit_re not right ended\n");
+            cuda_BVHHit bvhhit_right = hit_recursive(r, tmin, tmax, node->right);
             if (bvhhit_right.is_hit) {
                 return bvhhit_right;
             } else if (bvhhit_left.is_hit){

@@ -37,7 +37,7 @@ public:
 class cuda_SolidTexture : public cuda_Texture {
     vec3 albedo;
 public:
-    __host__ cuda_SolidTexture(const vec3 &albedo) : albedo(albedo) {}
+    __host__ cuda_SolidTexture(const vec3 albedo) : albedo(albedo) {}
 
     __device__ vec3 value(float u, float v, const vec3& p) const {
         return albedo;
@@ -57,13 +57,13 @@ public:
         return albedo;
     }
 
-    cuda_Texture *convertToDevice() override {
+    cuda_SolidTexture *convertToDevice() override {
         host_cuda_texture = new cuda_SolidTexture(albedo);
 
         cuda_SolidTexture *dev_cuda_texture;
 
-        cudaMalloc(&dev_cuda_texture, sizeof(cuda_Texture));
-        cudaMemcpy(dev_cuda_texture, host_cuda_texture, sizeof(cuda_Texture), cudaMemcpyHostToDevice);
+        cudaMalloc(&dev_cuda_texture, sizeof(cuda_SolidTexture));
+        cudaMemcpy(dev_cuda_texture, host_cuda_texture, sizeof(cuda_SolidTexture), cudaMemcpyHostToDevice);
 
         return dev_cuda_texture;
     }
@@ -168,26 +168,13 @@ public:
         return isEven ? even->value(u, v, p) : odd->value(u, v, p);
     }
 
-    cuda_Texture *convertToDevice() override {
-        host_even = even->convertToDevice();
-        host_odd = odd->convertToDevice();
-
-        cuda_Texture *dev_even;
-        cuda_Texture *dev_odd;
-
-        cudaMalloc(&dev_even, sizeof(cuda_Texture));
-        cudaMalloc(&dev_odd, sizeof(cuda_Texture));
-
-        cudaMemcpy(dev_even, host_even, sizeof(cuda_Texture), cudaMemcpyHostToDevice);
-        cudaMemcpy(dev_odd, host_odd, sizeof(cuda_Texture), cudaMemcpyHostToDevice);
-
-
-        host_cuda_texture = new cuda_CheckerTexture(inv_scale, dev_even, even->type(), dev_odd, odd->type());
+    cuda_CheckerTexture *convertToDevice() override {
+        host_cuda_texture = new cuda_CheckerTexture(inv_scale, even->convertToDevice(), even->type(), odd->convertToDevice(), odd->type());
 
         cuda_CheckerTexture *dev_cuda_texture;
 
-        cudaMalloc(&dev_cuda_texture, sizeof(cuda_Texture));
-        cudaMemcpy(dev_cuda_texture, host_cuda_texture, sizeof(cuda_Texture), cudaMemcpyHostToDevice);
+        cudaMalloc(&dev_cuda_texture, sizeof(cuda_CheckerTexture));
+        cudaMemcpy(dev_cuda_texture, host_cuda_texture, sizeof(cuda_CheckerTexture), cudaMemcpyHostToDevice);
 
         return dev_cuda_texture;
     }

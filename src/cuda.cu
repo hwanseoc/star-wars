@@ -105,43 +105,40 @@ void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, 
     std::shared_ptr<Material> material_light_yellow = std::make_shared<DiffuseLight>(vec3(0.7, 0.7, 0.0));
     std::shared_ptr<Material> material_light_purple = std::make_shared<DiffuseLight>(vec3(0.7, 0.0, 0.7));
     
-    // std::shared_ptr<Material> material3 = std::make_shared<Lambertian>(earth_texture);
     std::shared_ptr<Object> sphere1 = std::make_shared<Sphere>(vec3(-4.0, 1.0, 0.0), 1.0, material_light_yellow);
     std::shared_ptr<Object> sphere2 = std::make_shared<Sphere>(vec3(0.0, 1.0, 0.0), 1.0, material_light_purple);
     std::shared_ptr<Object> sphere3 = std::make_shared<Sphere>(vec3(4.0, 1.0, 0.0), 1.0, material_light_yellow);
     world.add(sphere1);
     world.add(sphere2);
     world.add(sphere3);
-    // add_object(world, "data/prism.obj", vec3(4.0, 1.0, 0.0), vec3(0.0, 1.0, 0.0), 180.0f, vec3(0.8, 0.8, 0.8), material1);    
 
-    // for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
-    //     for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
-    //         float material_choice = random_float();
+    for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
+        for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
+            float material_choice = random_float();
 
-    //         vec3 sphere_center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
+            vec3 sphere_center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
 
-    //         if (length(sphere_center - vec3(4, 0.2, 0.0)) > 0.9f) {
-    //             Material *material;
+            if (length(sphere_center - vec3(4, 0.2, 0.0)) > 0.9f) {
+                std::shared_ptr<Material> material;
 
-    //             if (material_choice < 0.8f) {
-    //                 // diffuse
-    //                 vec3 albedo = vec3(random_float() * random_float(), random_float() * random_float(), random_float() * random_float());
-    //                 material = new Lambertian(albedo);
-    //             } else if (material_choice < 0.95f) {
-    //                 // metal
-    //                 vec3 albedo = vec3(0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float());
-    //                 float fuzz = random_float() * 0.5f;
-    //                 material = new Metal(albedo, fuzz);
-    //             } else {
-    //                 // dielectric
-    //                 material = new Dielectric(1.5f);
-    //             }
-    //             Sphere *sphere = new Sphere(sphere_center, 0.2, material);
-    //             world.add(sphere);
-    //             world.add_mat(material);
-    //         }
-    //     }
-    // }
+                if (material_choice < 0.8f) {
+                    // diffuse
+                    vec3 albedo = vec3(random_float() * random_float(), random_float() * random_float(), random_float() * random_float());
+                    material = std::make_shared<Lambertian>(albedo);
+                } else if (material_choice < 0.95f) {
+                    // metal
+                    vec3 albedo = vec3(0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float(), 0.5f + 0.5f * random_float());
+                    float fuzz = random_float() * 0.5f;
+                    material = std::make_shared<Metal>(albedo, fuzz);
+                } else {
+                    // dielectric
+                    material = std::make_shared<Dielectric>(1.5f);
+                }
+                std::shared_ptr<Object> sphere = std::make_shared<Sphere>(sphere_center, 0.2, material);
+                world.add(sphere);
+            }
+        }
+    }
 
 }
 
@@ -219,10 +216,10 @@ int32_t main(int32_t argc, char *argv[]) {
     std::string filename = ss.str();
 
     // image resolution
-    // int32_t width = 2560;
-    // int32_t height = 1440;
-    int32_t width = 30;
-    int32_t height = 30;
+    int32_t width = 2560;
+    int32_t height = 1440;
+    // int32_t width = 30;
+    // int32_t height = 30;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // materials
