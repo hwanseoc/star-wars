@@ -93,27 +93,22 @@ void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, 
     );
 
     // World
-    CheckerTexture *checker = new CheckerTexture(0.32, vec3(0.2, 0.3, 0.1), vec3(0.9, 0.9, 0.9));
+    std::shared_ptr<Texture> checker = std::make_shared<CheckerTexture>(0.32, vec3(0.2, 0.3, 0.1), vec3(0.9, 0.9, 0.9));
 
-    Material *material_ground = new Lambertian(checker);
-    world.add_mat(material_ground);
+    std::shared_ptr<Material> material_ground = std::make_shared<Lambertian>(checker);
 
-    Sphere *sphere_ground = new Sphere(vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
+    std::shared_ptr<Object> sphere_ground = std::make_shared<Sphere>(vec3(0.0, -1000.0, 0.0), 1000.0, material_ground);
     world.add(sphere_ground);
 
-    Material *material1 = new Dielectric(1.5f);
-    world.add_mat(material1);
-    Material *material2 = new Metal(vec3(0.7, 0.6, 0.5), 0.0);
-    world.add_mat(material2);
-    Material *material_light_yellow = new DiffuseLight(vec3(0.7, 0.7, 0.0));
-    world.add_mat(material_light_yellow);
-    Material *material_light_purple = new DiffuseLight(vec3(0.7, 0.0, 0.7));
-    world.add_mat(material_light_purple);
+    std::shared_ptr<Material> material1 = std::make_shared<Dielectric>(1.5f);
+    std::shared_ptr<Material> material2 = std::make_shared<Metal>(vec3(0.7, 0.6, 0.5), 0.0);
+    std::shared_ptr<Material> material_light_yellow = std::make_shared<DiffuseLight>(vec3(0.7, 0.7, 0.0));
+    std::shared_ptr<Material> material_light_purple = std::make_shared<DiffuseLight>(vec3(0.7, 0.0, 0.7));
     
     // std::shared_ptr<Material> material3 = std::make_shared<Lambertian>(earth_texture);
-    Sphere *sphere1 = new Sphere(vec3(-4.0, 1.0, 0.0), 1.0, material_light_yellow);
-    Sphere *sphere2 = new Sphere(vec3(0.0, 1.0, 0.0), 1.0, material_light_purple);
-    Sphere *sphere3 = new Sphere(vec3(4.0, 1.0, 0.0), 1.0, material_light_yellow);
+    std::shared_ptr<Object> sphere1 = std::make_shared<Sphere>(vec3(-4.0, 1.0, 0.0), 1.0, material_light_yellow);
+    std::shared_ptr<Object> sphere2 = std::make_shared<Sphere>(vec3(0.0, 1.0, 0.0), 1.0, material_light_purple);
+    std::shared_ptr<Object> sphere3 = std::make_shared<Sphere>(vec3(4.0, 1.0, 0.0), 1.0, material_light_yellow);
     world.add(sphere1);
     world.add(sphere2);
     world.add(sphere3);

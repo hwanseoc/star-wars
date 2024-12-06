@@ -34,7 +34,7 @@ public:
         normal = normalize(cross(u_edge, v_edge));
     }
 
-    ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const override {
+    ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const {
         ColorHit ret;
         ret.point = r.at(bvhhit.t);
         ret.direction = random_hemisphere(ret.normal);
@@ -58,7 +58,7 @@ public:
         return ret;
     }
 
-    BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const override {
+    BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const {
         BVHHit ret;
         ret.is_hit = false;
 

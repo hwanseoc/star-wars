@@ -74,19 +74,19 @@ public:
 
 
 class Lambertian : public Material {
-    Texture *texture;
+    std::shared_ptr<Texture> texture;
     cuda_Texture *host_texture;
     cuda_Lambertian *host_cuda_lambertian;
 public:
     Lambertian(const vec3 albedo) {
-        texture = new SolidTexture(albedo);
+        texture = std::make_shared<SolidTexture>(albedo);
     }
-    Lambertian(Texture *texture) :  texture(texture) {}
+    Lambertian(std::shared_ptr<Texture> texture) :  texture(texture) {}
 
     ~Lambertian(){
-        if(texture) delete texture;
-        if(host_texture) delete host_texture;
-        if(host_cuda_lambertian) delete host_cuda_lambertian;
+        // if(texture) delete texture;
+        // if(host_texture) delete host_texture;
+        // if(host_cuda_lambertian) delete host_cuda_lambertian;
     }
 
     void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
@@ -319,14 +319,14 @@ public:
 };
 
 class DiffuseLight : public Material {
-    Texture *texture;
+    std::shared_ptr<Texture> texture;
     cuda_Texture *host_texture;
     cuda_DiffuseLight *host_cuda_diffuselight;
 
 public:
-    DiffuseLight(Texture *texture) : texture(texture) {}
+    DiffuseLight(std::shared_ptr<Texture> texture) : texture(texture) {}
     DiffuseLight(const vec3& emit) {
-        texture = new SolidTexture(emit);
+        texture = std::make_shared<SolidTexture>(emit);
     }
     ~DiffuseLight(){
         // delete texture;

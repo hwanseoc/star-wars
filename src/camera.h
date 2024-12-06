@@ -58,8 +58,11 @@ public:
     }
 
     void render_gpu(std::vector<uint8_t> &image, const World& world) {
-        dim3 threadsPerBlock(1, 1);
+        dim3 threadsPerBlock(16, 16);
         dim3 numBlocks((width - 1) / threadsPerBlock.x + 1, (height - 1) / threadsPerBlock.y + 1);
+
+        size_t newStackSize = 64 * 1024;
+        cudaDeviceSetLimit(cudaLimitStackSize, newStackSize);
 
         printf("render_gpu\tstarted\n");
         curandState *states;
@@ -71,6 +74,7 @@ public:
         BVH bvh(world);
         cuda_BVH *host_cuda_bvh = bvh.convertToDevice();
         cuda_BVH *dev_cuda_bvh;
+        //printf("after world\n");
 
         PerspectiveCamera *host_camera = this;
         PerspectiveCamera *dev_camera;
@@ -84,7 +88,7 @@ public:
         vec3 *host_image = (vec3 *)malloc(sizeof(vec3 ) * height * width);
         vec3 *dev_image;
         cudaMalloc(&dev_image, sizeof(vec3) * height * width);
-        printf("xdim%d\n",(threadsPerBlock.x * numBlocks.x));
+        //printf("xdim%d\n",(threadsPerBlock.x * numBlocks.x));
         printf("render_gpu\tkernel started\n");
         render_kernel<<<numBlocks, threadsPerBlock>>>(states, (threadsPerBlock.x * numBlocks.x), dev_cuda_bvh, dev_camera, height, width, dev_image);
 
@@ -194,13 +198,13 @@ public:
         if (depth <= 0) {
             return vec3(0.0, 0.0, 0.0);
         }
-        printf("raydir %f %f %f\n",r.direction.x,r.direction.y,r.direction.z);
-        printf("%d %d get color\t before bvh hit\n",id,depth);
+        //printf("raydir %f %f %f\n",r.direction.x,r.direction.y,r.direction.z);
+        //printf("%d %d get color\t before bvh hit\n",id,depth);
         cuda_BVHHit bvh_hit = bvh->hit(id, r, 0.001f, std::numeric_limits<float>::max());
         if (!bvh_hit.is_hit) {
             return vec3(0.0, 0.0, 0.0);
         }
-        printf("%d %d get color\t before color hit\n",id,depth);
+        //printf("%d %d get color\t before color hit\n",id,depth);
 
         cuda_ColorHit hit;
         switch(bvh_hit.obj_type)
@@ -211,14 +215,14 @@ public:
         default:
             break;
         }
-        printf("%d %d get color\t after color hit\n",id, depth);
+        //printf("%d %d get color\t after color hit\n",id, depth);
         // bool is_scatter, vec3 attenuation, Ray ray_scatter
         bool is_scatter = false;
         vec3 attenuation = vec3();
         Ray ray_scatter = Ray();
         vec3 color_emitted = vec3();
-        printf("%d %dget color\t before mat hit\n",id,depth);
-        printf("mat_type%d\n",hit.mat_type);
+        //printf("%d %dget color\t before mat hit\n",id,depth);
+        //printf("mat_type%d\n",hit.mat_type);
         switch (hit.mat_type)
         {
         case MAT_TYPE_CUDA_DIELECTRIC:
@@ -235,12 +239,12 @@ public:
             break;
         
         default:
-            printf("found wrong mat type\n");
+            //printf("found wrong mat type\n");
             // hit.mat->scatter(r, hit, is_scatter, attenuation, ray_scatter);
             // color_emitted = hit.mat->emitted(hit);
             break;
         }
-        printf("%d %d get color\t after mat hit\n",id,depth);
+        //printf("%d %d get color\t after mat hit\n",id,depth);
 
         if (!is_scatter) {
             return color_emitted;
@@ -253,19 +257,28 @@ public:
 __global__  void render_kernel(curandState *state, int32_t x_dim, cuda_BVH *bvh, PerspectiveCamera *camera, int32_t height, int32_t width, vec3* image) {
     int32_t w = blockIdx.x * blockDim.x + threadIdx.x;
     int32_t h = blockIdx.y * blockDim.y + threadIdx.y;
-    // printf("%d %d\t started\n", h, w);
-    // printf("%d %d\n",w,h);
+    // //printf("%d %d\t started\n", h, w);
+    // //printf("%d %d\n",w,h);
     if ( h < height && w < width) {
         image[h*width + w] = vec3(static_cast<float>(w) / static_cast<float>(width), static_cast<float>(h) / static_cast<float>(height), 0.0f);
     }
-    //if (true) {
-    if ( h == 22 && w == 4){
-    printf("%d %d\t before ray\n", h, w);
+    if (h < height && w < width)  {
+    //if ( h == 22 && w == 4){
+    //printf("%d %d\t before ray\n", h, w);
     Ray r = camera->get_ray(&state[h * x_dim + w],h, w);
-    printf("%d %d\t before color\n", h, w);
-    vec3 sampled = camera->get_color(&state[h * x_dim + w], h * x_dim + w, bvh, r, 3);
+    //printf("%d %d\t before color\n", h, w);
+    vec3 sampled = camera->get_color(&state[h * x_dim + w], h * x_dim + w, bvh, r, 50);
+
+
+        for (int32_t s = 0; s < samples; ++s) {
+            Ray r = this->get_ray(h, w);
+            vec3 sampled = get_color(bvh, world, r, 50);
+            pixel += sampled;
+        }
+
+        pixel /= samples;
     }
-    // printf("render_kernel at %d %d\t ended\n", h, w);
+    // //printf("render_kernel at %d %d\t ended\n", h, w);
     __syncthreads();
 }
 

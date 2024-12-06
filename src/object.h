@@ -114,10 +114,6 @@ public:
 
     virtual AABB aabb() const = 0;
 
-    virtual ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const = 0;
-
-    virtual BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const = 0;
-
     virtual cuda_Object *convertToDevice() = 0;
 
     virtual int32_t type() const {
@@ -126,20 +122,19 @@ public:
 };
 
 class World {
-    std::vector<Object*> objects;
-    std::vector<Material*> materials;
+    std::vector<std::shared_ptr<Object>> objects;
     AABB box_aabb;
 
 public:
     World() {}
 
     void destroy() {
-        for (Object* &obj_ptr : objects) {
-            delete obj_ptr;
-        }
-        for (Material* &mat_ptr : materials) {
-            delete mat_ptr;
-        }
+        // for (std::shared_ptr<Object> &obj_ptr : objects) {
+        //     delete obj_ptr;
+        // }
+        // for (Material* &mat_ptr : materials) {
+        //     delete mat_ptr;
+        // }
     }
 
     AABB aabb() const {
@@ -147,18 +142,13 @@ public:
     }
 
     template <typename OBJ_T>
-    void add(OBJ_T *obj) {
+    void add(OBJ_T obj) {
         objects.push_back(obj);
 
         box_aabb = AABB(box_aabb, obj->aabb());
     }
 
-    template <typename MAT_T>
-    void add_mat(MAT_T *mat) {
-        materials.push_back(mat);
-    }
-
-    const std::vector<Object*>& get_objects() const {
+    const std::vector<std::shared_ptr<Object>>& get_objects() const {
         return objects;
     }
 };

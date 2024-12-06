@@ -141,8 +141,8 @@ public:
 
 class CheckerTexture : public Texture {
     float inv_scale;
-    Texture *even;
-    Texture *odd;
+    std::shared_ptr<Texture> even;
+    std::shared_ptr<Texture> odd;
     cuda_Texture *host_even;
     cuda_Texture *host_odd;
     cuda_CheckerTexture *host_cuda_texture;
@@ -151,16 +151,11 @@ public:
     CheckerTexture(float scale, Texture *even, Texture *odd) : inv_scale(1.0f / scale), even(even), odd(odd) {}
     CheckerTexture(float scale, const vec3 &c1, const vec3 &c2) {
         inv_scale = 1.0f / scale;
-        even = new SolidTexture(c1);
-        odd = new SolidTexture(c2);
+        even = std::make_shared<SolidTexture>(c1);
+        odd = std::make_shared<SolidTexture>(c2);
     }
 
     ~CheckerTexture(){
-        delete even;
-        delete odd;
-        delete host_even;
-        delete host_odd;
-        delete host_cuda_texture;
     }
 
     vec3 value(float u, float v, const vec3 &p) const override {
