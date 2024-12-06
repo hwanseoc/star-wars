@@ -234,8 +234,6 @@ int32_t main(int32_t argc, char *argv[]) {
 
     ppm(image, height, width);
 
-    world.destroy();
-
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << std::endl << "Execution time: " << elapsed.count() << " seconds" << std::endl;

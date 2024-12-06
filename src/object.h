@@ -127,15 +127,7 @@ class World {
 
 public:
     World() {}
-
-    void destroy() {
-        // for (std::shared_ptr<Object> &obj_ptr : objects) {
-        //     delete obj_ptr;
-        // }
-        // for (Material* &mat_ptr : materials) {
-        //     delete mat_ptr;
-        // }
-    }
+    ~World() {}
 
     AABB aabb() const {
         return box_aabb;

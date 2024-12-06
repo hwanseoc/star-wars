@@ -35,6 +35,13 @@ public:
     cuda_BVH() {}
     cuda_BVH(cuda_BVHNode *nodes, int32_t node_size, int64_t root) : nodes(nodes), node_size(node_size), root(root) {}
 
+    __host__ ~cuda_BVH() {
+        if(nodes) {
+            cudaFree(nodes);
+            nodes=nullptr;
+        }
+    }
+
     __device__ cuda_BVHHit hit(const Ray &r, float tmin, float tmax) {
         return hit_recursive(r, tmin, tmax, root);
     }
@@ -130,8 +137,13 @@ public:
     }
 
     ~BVH() {
-        // if(host_nodes) free(host_nodes);
-        // if(host_cuda_bvh) delete host_cuda_bvh;
+        for (int32_t i=0; i<nodes.size(); ++i) {
+            if (host_nodes[i].obj) {
+                cudaFree(host_nodes[i].obj);
+            }
+        }
+        if (host_nodes) delete host_nodes;
+        if (host_cuda_bvh) delete host_cuda_bvh;
     }
 private:
     int64_t build_recursive(int64_t start, int64_t end) {
@@ -181,25 +193,14 @@ private:
     }
 public:
     cuda_BVH *convertToDevice() {
-        //printf("insider cuda_bvh convertToDevice\n");
         cuda_BVHNode *dev_nodes;
         int32_t num_nodes = nodes.size();
         host_nodes = (cuda_BVHNode *)malloc(sizeof(cuda_BVHNode) * num_nodes);
         cudaMalloc(&dev_nodes, sizeof(cuda_BVHNode) * num_nodes);
 
         //copy vector to host_nodes
-        //printf("before copy\n");
-        for(int32_t i = 0; i < num_nodes; ++i) {
-            //printf("[%d]:[%d] %p\n", i, (int)(nodes[i].is_leaf), nodes[i].obj.get());
-        }
-
         for (int32_t i = 0; i < num_nodes; ++i) {
-            //printf("inside for\n");
-            //printf("%d\n",(int)(nodes[i].is_leaf));
-            //printf("%p\n",nodes[i].obj.get());
             if (nodes[i].is_leaf) {
-                //printf("inside if\n");
-                //printf("obj_type:%d\n",nodes[i].obj->type());
                 host_nodes[i] = {
                     .is_leaf = true,
                     .aabb = nodes[i].aabb,

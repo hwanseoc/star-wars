@@ -84,14 +84,13 @@ class Sphere : public Object {
     float radius;
     std::shared_ptr<Material> mat;
 
-    cuda_Material *host_mat;
     cuda_Sphere *host_cuda_obj;
+    
 
 public:
     Sphere(const vec3 &origin, float radius, std::shared_ptr<Material> mat) : origin(origin), radius(radius), mat(mat) {}
     ~Sphere() {
-        // delete host_mat;
-        // delete host_cuda_obj;
+        if (host_cuda_obj) delete host_cuda_obj;
     }
 
     AABB aabb() const override {
@@ -100,15 +99,10 @@ public:
     }
 
     __host__ cuda_Sphere *convertToDevice() override {
-        //printf("inside cuda_sphere convert\n");
-        // host_mat = mat->convertToDevice();
-        // cuda_Material *dev_mat;
-        // cudaMalloc(&dev_mat, sizeof(cuda_Material));
-        // cudaMemcpy(dev_mat, host_mat, sizeof(cuda_Material), cudaMemcpyHostToDevice);
-
-        // host_cuda_obj = new cuda_Sphere(origin, radius, dev_mat, mat->type());
         host_cuda_obj = new cuda_Sphere(origin, radius, mat->convertToDevice(), mat->type());
+        
         cuda_Sphere *dev_cuda_obj;
+
         cudaMalloc(&dev_cuda_obj, sizeof(cuda_Sphere));
         cudaMemcpy(dev_cuda_obj, host_cuda_obj, sizeof(cuda_Sphere), cudaMemcpyHostToDevice);
 

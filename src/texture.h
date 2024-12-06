@@ -50,7 +50,7 @@ class SolidTexture : public Texture {
 public:
     SolidTexture(const vec3 &albedo) : albedo(albedo) {}
     ~SolidTexture() {
-        delete host_cuda_texture;
+        if (host_cuda_texture) delete host_cuda_texture;
     }
 
     vec3 value(float u, float v, const vec3& p) const override {
@@ -59,7 +59,6 @@ public:
 
     cuda_SolidTexture *convertToDevice() override {
         host_cuda_texture = new cuda_SolidTexture(albedo);
-
         cuda_SolidTexture *dev_cuda_texture;
 
         cudaMalloc(&dev_cuda_texture, sizeof(cuda_SolidTexture));
@@ -97,9 +96,15 @@ public:
         cuda_Texture *odd,
         int32_t odd_tex_type
     ) : inv_scale(inv_scale), even(even), even_tex_type(even_tex_type), odd(odd), odd_tex_type(odd_tex_type) {}
-    __host__ ~cuda_CheckerTexture(){
-        // cudaFree(even);
-        // cudaFree(odd);
+    __host__ ~cuda_CheckerTexture() {
+        if (even) {
+            cudaFree(even);
+            even = nullptr;
+        }
+        if (odd) {
+            cudaFree(odd);
+            odd = nullptr;
+        }
     }
 
     __device__ vec3 value(float u, float v, const vec3 &p) const {
@@ -143,8 +148,6 @@ class CheckerTexture : public Texture {
     float inv_scale;
     std::shared_ptr<Texture> even;
     std::shared_ptr<Texture> odd;
-    cuda_Texture *host_even;
-    cuda_Texture *host_odd;
     cuda_CheckerTexture *host_cuda_texture;
 
 public:
@@ -156,6 +159,7 @@ public:
     }
 
     ~CheckerTexture(){
+        if (host_cuda_texture) delete host_cuda_texture;
     }
 
     vec3 value(float u, float v, const vec3 &p) const override {

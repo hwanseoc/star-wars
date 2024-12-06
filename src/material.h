@@ -44,7 +44,10 @@ public:
     __host__ cuda_Lambertian(cuda_Texture *texture, int32_t tex_type) : texture(texture), tex_type(tex_type) {}
 
     __host__ ~cuda_Lambertian(){
-        // if(texture) cudaFree(texture);
+        if (texture) {
+            cudaFree(texture);
+            texture = nullptr;
+        }
     }
 
     __device__ void scatter(curandState *state, const Ray &r, const cuda_ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
@@ -75,7 +78,6 @@ public:
 
 class Lambertian : public Material {
     std::shared_ptr<Texture> texture;
-    cuda_Texture *host_texture;
     cuda_Lambertian *host_cuda_lambertian;
 public:
     Lambertian(const vec3 albedo) {
@@ -84,9 +86,7 @@ public:
     Lambertian(std::shared_ptr<Texture> texture) :  texture(texture) {}
 
     ~Lambertian(){
-        // if(texture) delete texture;
-        // if(host_texture) delete host_texture;
-        // if(host_cuda_lambertian) delete host_cuda_lambertian;
+        if (host_cuda_lambertian) delete host_cuda_lambertian;
     }
 
     void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
@@ -151,7 +151,7 @@ public:
     Metal(const vec3 albedo, float fuzz) : albedo(albedo), fuzz(fuzz) {}
 
     ~Metal() {
-        // delete host_cuda_metal;
+        if (host_cuda_metal) delete host_cuda_metal;
     }
 
     void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const {
@@ -233,7 +233,7 @@ public:
     Dielectric(float refractive_index) : refractive_index(refractive_index) {}
 
     ~Dielectric() {
-        // delete host_cuda_dielectric;
+        if (host_cuda_dielectric) delete host_cuda_dielectric;
     }
 
     void scatter(const Ray &r, const ColorHit &hit, bool &is_scattered, vec3 &attenuation, Ray &scattered) const override {
@@ -293,7 +293,10 @@ class cuda_DiffuseLight : public cuda_Material {
 public:
     __host__ cuda_DiffuseLight(cuda_Texture *texture, int32_t tex_type) : texture(texture), tex_type(tex_type) {}
     __host__ ~cuda_DiffuseLight(){
-        // delete texture;
+        if (texture) {
+            cudaFree(texture);
+            texture = nullptr;
+        }
     }
 
     __device__ vec3 emitted(const cuda_ColorHit &hit) const {
@@ -316,7 +319,6 @@ public:
 
 class DiffuseLight : public Material {
     std::shared_ptr<Texture> texture;
-    cuda_Texture *host_texture;
     cuda_DiffuseLight *host_cuda_diffuselight;
 
 public:
@@ -325,9 +327,7 @@ public:
         texture = std::make_shared<SolidTexture>(emit);
     }
     ~DiffuseLight(){
-        // delete texture;
-        // delete host_texture;
-        // delete host_cuda_diffuselight;
+        if (host_cuda_diffuselight) delete host_cuda_diffuselight;
     }
 
     vec3 emitted(const ColorHit &hit) const override {

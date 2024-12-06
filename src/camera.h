@@ -74,7 +74,6 @@ public:
         BVH bvh(world);
         cuda_BVH *host_cuda_bvh = bvh.convertToDevice();
         cuda_BVH *dev_cuda_bvh;
-        //printf("after world\n");
 
         PerspectiveCamera *host_camera = this;
         PerspectiveCamera *dev_camera;
@@ -111,7 +110,7 @@ public:
 
         cudaMemcpy(host_image, dev_image, sizeof(vec3) * height * width, cudaMemcpyDeviceToHost);
 
-
+        printf("render_gpu\tprocessing image\n");
         for (int32_t h = 0; h < height; ++h) {
             for (int32_t w = 0; w < width; ++ w) {
                 vec3 pixel = host_image[h*width + w];
@@ -134,6 +133,10 @@ public:
                 image[h * width * 4 + w * 4 + 3] = 255;
             }
         }
+        printf("render_gpu\tfreeing memory\n");
+        cudaFree(host_cuda_bvh);
+        cudaFree(dev_cuda_bvh);
+
         cudaFree(dev_image);
         free(host_image);
 
@@ -190,7 +193,6 @@ public:
             break;
         case MAT_TYPE_CUDA_DIFFUSELIGHT:
             color_emitted = ((cuda_DiffuseLight *)hit.mat)->emitted(hit);
-            // color_emitted.printVec();
             break;
         case MAT_TYPE_CUDA_LAMBERTIAN:
             ((cuda_Lambertian *)hit.mat)->scatter(state, r, hit, is_scatter, attenuation, ray_scatter);
@@ -217,13 +219,20 @@ public:
 __global__  void render_kernel(curandState *state, int32_t x_dim, cuda_BVH *bvh, PerspectiveCamera *camera, int32_t height, int32_t width, int32_t samples, vec3* image) {
     int32_t w = blockIdx.x * blockDim.x + threadIdx.x;
     int32_t h = blockIdx.y * blockDim.y + threadIdx.y;
+
+    __shared__ cuda_BVH shared_cuda_bvh;
+
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+        shared_cuda_bvh = *bvh;
+    }
+
+    __syncthreads();
+
     if (h < height && w < width) {
         vec3 pixel(0.0, 0.0, 0.0);
         for (int32_t s = 0; s < samples; ++s) {
-            Ray r = camera->get_ray(&state[h * x_dim + w],h, w);
-            // r.printRay();
-            vec3 sampled = camera->get_color(&state[h * x_dim + w], bvh, r, 50);
-            // printf("[%d %d] (%f %f %f)\n", w, h, sampled.x, sampled.y, sampled.z);
+            Ray r = camera->get_ray(&state[h * x_dim + w], h, w);
+            vec3 sampled = camera->get_color(&state[h * x_dim + w], &shared_cuda_bvh, r, 50);
             pixel += sampled;
         }
 
@@ -231,13 +240,5 @@ __global__  void render_kernel(curandState *state, int32_t x_dim, cuda_BVH *bvh,
         image[h * width + w] = pixel;
     }
     __syncthreads();
-
-    // if (h==0 && w == 0) {
-    //     for(int32_t i=0;i<height;++i) {
-    //         for(int32_t j=0; j< width; ++j) {
-    //             printf("[%d %d] (%f %f %f)\n", i, j, image[i * width + j].x,image[i * width + j].y,image[i * width + j].z);
-    //         }
-    //     }
-    // }
 }
 
