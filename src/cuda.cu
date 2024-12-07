@@ -8,6 +8,11 @@
 #include <sstream>
 #include <typeinfo>
 
+#include <glm/glm.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/transform.hpp>
+
 #include <vec.h>
 #include <ray.h>
 #include <camera.h>
@@ -17,54 +22,54 @@
 #include <triangle.h>
 #include <texture.h>
 
-// void add_object(
-//     World &world,
-//     const std::string &filename,
-//     const vec3 &translate,
-//     const vec3 &rotate_axis,
-//     const float rotate_angle, //degree
-//     const vec3 &scale,
-//     std::shared_ptr<Material> &material
-// ) {
-//     std::vector<vec3> vertices;
+void add_object(
+    World &world,
+    const std::string &filename,
+    const glm::vec3 &translate,
+    const glm::vec3 &rotate_axis,
+    const float rotate_angle, //degree
+    const glm::vec3 &scale,
+    std::shared_ptr<Material> &material
+) {
+    std::vector<glm::vec3> vertices;
 
-//     std::ifstream ifs(filename);
+    std::ifstream ifs(filename);
 
-//     std::string line;
-//     while (getline(ifs, line)) {
-//         std::istringstream iss(line);
-//         std::string type;
-//         iss >> type;
-//         if (type == "v") {
-//             vec3 v;
-//             iss >> v.x >> v.y >> v.z;
-//             vertices.push_back(v);
-//         } else if (type == "f") {
-//             int32_t f[3];
-//             iss >> f[0] >> f[1] >> f[2];
+    std::string line;
+    while (getline(ifs, line)) {
+        std::istringstream iss(line);
+        std::string type;
+        iss >> type;
+        if (type == "v") {
+            glm::vec3 v;
+            iss >> v.x >> v.y >> v.z;
+            vertices.push_back(v);
+        } else if (type == "f") {
+            int32_t f[3];
+            iss >> f[0] >> f[1] >> f[2];
 
-//             glm::mat4 transform_matrix = glm::mat4(1.0f);
-//             transform_matrix = glm::translate(transform_matrix, translate);
-//             transform_matrix = glm::rotate(transform_matrix, glm::radians(rotate_angle), rotate_axis);
-//             transform_matrix = glm::scale(transform_matrix, scale);
+            glm::mat4 transform_matrix = glm::mat4(1.0f);
+            transform_matrix = glm::translate(transform_matrix, translate);
+            transform_matrix = glm::rotate(transform_matrix, glm::radians(rotate_angle), rotate_axis);
+            transform_matrix = glm::scale(transform_matrix, scale);
 
-//             auto apply_transform = [&](const vec3& vertex) -> vec3 {
-//                 glm::vec4 transformed_vertex = transform_matrix * glm::vec4(vertex, 1.0f);
-//                 return vec3(transformed_vertex); // Convert back to 3D vector
-//             };
+            auto apply_transform = [&](const glm::vec3& vertex) -> glm::vec3 {
+                glm::vec4 transformed_vertex = transform_matrix * glm::vec4(vertex, 1.0f);
+                return glm::vec3(transformed_vertex); // Convert back to 3D vector
+            };
 
-//             Triangle triangle(
-//                 apply_transform(vertices[f[0]-1]),
-//                 apply_transform(vertices[f[1]-1]),
-//                 apply_transform(vertices[f[2]-1]),
-//                 material
-//             );
-//             world.add(triangle);
-//         } else {
-//             std::cout << "object parser error" << std::endl;
-//         }
-//     }
-// }
+            // Triangle triangle(
+            //     apply_transform(vertices[f[0]-1]),
+            //     apply_transform(vertices[f[1]-1]),
+            //     apply_transform(vertices[f[2]-1]),
+            //     material
+            // );
+            // world.add(triangle);
+        } else {
+            std::cout << "object parser error" << std::endl;
+        }
+    }
+}
 
 void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, int32_t width){
     // Camera
@@ -216,10 +221,10 @@ int32_t main(int32_t argc, char *argv[]) {
     std::string filename = ss.str();
 
     // image resolution
-    // int32_t width = 2560;
-    // int32_t height = 1440;
-    int32_t width = 1000;
-    int32_t height = 1000;
+    int32_t width = 2560;
+    int32_t height = 1440;
+    // int32_t width = 1280;
+    // int32_t height = 720;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // materials
@@ -229,7 +234,7 @@ int32_t main(int32_t argc, char *argv[]) {
     scene1(world, perspectiveCamera, height, width); // lots of balls
 
     // render
-    perspectiveCamera.render_gpu(image, world);
+    perspectiveCamera.render_gpu_with_sub_image(image, world);
 
 
     ppm(image, height, width);
