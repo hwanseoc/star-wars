@@ -4,10 +4,11 @@
 #include <curand_kernel.h>
 #include <vec.h>
 
-__global__ void initCurandStates(curandState *states, unsigned long seed, int32_t x_dim) {
+__global__ void initCurandStates(curandState *states, unsigned long seed, int32_t x_dim, int32_t z_dim) {
     int32_t x = blockIdx.x * blockDim.x + threadIdx.x;
     int32_t y = blockIdx.y * blockDim.y + threadIdx.y;
-    int32_t id = y * x_dim + x;
+    int32_t z = blockIdx.z * blockDim.z + threadIdx.z;
+    int32_t id = (y * x_dim + x) * z_dim + z;
     curand_init(seed, id, 0, &states[id]);
 }
 
