@@ -22,25 +22,31 @@ counter-clockwise, 1->2->3
 
 
 // P = v1 + (v2 - v1) * u + (v3 - v1) * v
-class Triangle : public Object {
+
+class cuda_Triangle : public cuda_Object {
     vec3 v1, v2, v3;
     vec3 normal;
-    Material *mat;
+    cuda_Material *mat;
+    int8_t mat_type;
 
 public:
-    Triangle(const vec3 &v1, const vec3 &v2, const vec3 &v3, Material *mat) : v1(v1), v2(v2), v3(v3), mat(mat) {
-        vec3 u_edge = v2 - v1;
-        vec3 v_edge = v3 - v1;
-        normal = normalize(cross(u_edge, v_edge));
-    }
+    __host__ cuda_Triangle(
+        const vec3 &v1,
+        const vec3 &v2,
+        const vec3 &v3,
+        const vec3 &normal,
+        cuda_Material *mat,
+        int8_t mat_type
+    ) : v1(v1), v2(v2), v3(v3), normal(normal), mat(mat), mat_type(mat_type) {}
 
-    ColorHit hit(const BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const {
-        ColorHit ret;
+    __device__ cuda_ColorHit hit(curandState *state, const cuda_BVHHit &bvhhit, const Ray &r, float tmin, float tmax) const {
+        cuda_ColorHit ret;
         ret.point = r.at(bvhhit.t);
-        ret.direction = random_hemisphere(ret.normal);
+        ret.direction = cuda_random_hemisphere(state, ret.normal);
         ret.is_front = dot(r.direction, normal) < 0.0f;
         ret.normal = ret.is_front ? normal : -normal;
         ret.mat = mat;
+        ret.mat_type = mat_type;
 
         vec3 edge1 = v2 - v1;
         vec3 edge2 = v3 - v1;
@@ -58,8 +64,8 @@ public:
         return ret;
     }
 
-    BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const {
-        BVHHit ret;
+    __device__ cuda_BVHHit bvh_hit(const Ray &r, float tmin, float tmax) const {
+        cuda_BVHHit ret;
         ret.is_hit = false;
 
         vec3 edge1 = v2 - v1;
@@ -102,6 +108,43 @@ public:
         return ret;
     }
 
+    __host__ __device__ AABB aabb() const {
+        vec3 min(
+            std::min({v1.x, v2.x, v3.x}),
+            std::min({v1.y, v2.y, v3.y}),
+            std::min({v1.z, v2.z, v3.z})
+        );
+
+        vec3 max(
+            std::max({v1.x, v2.x, v3.x}),
+            std::max({v1.y, v2.y, v3.y}),
+            std::max({v1.z, v2.z, v3.z})
+        );
+
+        return AABB(min, max);
+    }
+};
+
+
+
+class Triangle : public Object {
+    vec3 v1, v2, v3;
+    vec3 normal;
+    std::shared_ptr<Material> mat;
+
+    cuda_Triangle *host_cuda_obj;
+
+public:
+    Triangle(const vec3 &v1, const vec3 &v2, const vec3 &v3, std::shared_ptr<Material> mat) : v1(v1), v2(v2), v3(v3), mat(mat) {
+        vec3 u_edge = v2 - v1;
+        vec3 v_edge = v3 - v1;
+        normal = normalize(cross(u_edge, v_edge));
+    }
+
+    ~Triangle() {
+        if (host_cuda_obj) delete host_cuda_obj;
+    }
+
     AABB aabb() const override {
         vec3 min(
             std::min({v1.x, v2.x, v3.x}),
@@ -116,5 +159,20 @@ public:
         );
 
         return AABB(min, max);
+    }
+
+    __host__ cuda_Triangle *convertToDevice() override {
+        host_cuda_obj = new cuda_Triangle(v1, v2, v3, normal, mat->convertToDevice(), mat->type());
+
+        cuda_Triangle *dev_cuda_obj;
+
+        cudaMalloc(&dev_cuda_obj, sizeof(cuda_Triangle));
+        cudaMemcpy(dev_cuda_obj, host_cuda_obj, sizeof(cuda_Triangle), cudaMemcpyHostToDevice);
+
+        return dev_cuda_obj;
+    }
+
+    __host__ int8_t type() const override {
+        return OBJ_TYPE_CUDA_TRIANGLE;
     }
 };

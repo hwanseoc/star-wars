@@ -57,14 +57,16 @@ void add_object(
                 glm::vec4 transformed_vertex = transform_matrix * glm::vec4(vertex, 1.0f);
                 return glm::vec3(transformed_vertex); // Convert back to 3D vector
             };
+            glm::vec3 glm_v1 = apply_transform(vertices[f[0]-1]);
+            glm::vec3 glm_v2 = apply_transform(vertices[f[1]-1]);
+            glm::vec3 glm_v3 = apply_transform(vertices[f[2]-1]);
 
-            // Triangle triangle(
-            //     apply_transform(vertices[f[0]-1]),
-            //     apply_transform(vertices[f[1]-1]),
-            //     apply_transform(vertices[f[2]-1]),
-            //     material
-            // );
-            // world.add(triangle);
+            vec3 v1 = vec3(glm_v1.x, glm_v1.y, glm_v1.z);
+            vec3 v2 = vec3(glm_v2.x, glm_v2.y, glm_v2.z);
+            vec3 v3 = vec3(glm_v3.x, glm_v3.y, glm_v3.z);
+
+            std::shared_ptr<Triangle> triangle = std::make_shared<Triangle>(v1, v2, v3, material);
+            world.add(triangle);
         } else {
             std::cout << "object parser error" << std::endl;
         }
@@ -116,6 +118,8 @@ void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, 
     world.add(sphere1);
     world.add(sphere2);
     world.add(sphere3);
+
+    add_object(world, "data/dragon.obj", glm::vec3(4.0, 1.0, 3.0), glm::vec3(0.0, 1.0, 0.0), 180.0f, glm::vec3(0.3, 0.3, 0.3), material1);
 
     for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
         for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
@@ -221,10 +225,10 @@ int32_t main(int32_t argc, char *argv[]) {
     std::string filename = ss.str();
 
     // image resolution
-    int32_t width = 2560;
-    int32_t height = 1440;
-    // int32_t width = 1280;
-    // int32_t height = 720;
+    // int32_t width = 2560;
+    // int32_t height = 1440;
+    int32_t width = 1280;
+    int32_t height = 720;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     // materials

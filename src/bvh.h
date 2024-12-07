@@ -5,6 +5,7 @@
 
 #include <object.h>
 #include <sphere.h>
+#include <triangle.h>
 
 
 struct BVHNode {
@@ -81,7 +82,9 @@ private:
             case OBJ_TYPE_CUDA_SPHERE:
                 bvhhit = ((cuda_Sphere *)node->obj)->bvh_hit(r, tmin, tmax);
                 break;
-            
+            case OBJ_TYPE_CUDA_TRIANGLE:
+                bvhhit = ((cuda_Triangle *)node->obj)->bvh_hit(r, tmin, tmax);
+                break;
             default:
                 printf("wrong type\n");
                 break;
@@ -135,7 +138,9 @@ private:
             case OBJ_TYPE_CUDA_SPHERE:
                 bvhhit = ((cuda_Sphere *)node->obj)->bvh_hit(r, tmin, tmax);
                 break;
-            
+            case OBJ_TYPE_CUDA_TRIANGLE:
+                bvhhit = ((cuda_Triangle *)node->obj)->bvh_hit(r, tmin, tmax);
+                break;
             default:
                 printf("wrong type\n");
                 break;

@@ -17,7 +17,7 @@ class cuda_Sphere : public cuda_Object {
     int8_t mat_type;
 
 public:
-    __host__ cuda_Sphere(const vec3 &origin, float radius, cuda_Material *mat, int32_t mat_type) : origin(origin), radius(radius), mat(mat), mat_type(mat_type) {}
+    __host__ cuda_Sphere(const vec3 &origin, float radius, cuda_Material *mat, int8_t mat_type) : origin(origin), radius(radius), mat(mat), mat_type(mat_type) {}
 
     __device__ cuda_ColorHit hit(curandState *state, const cuda_BVHHit &bvhhit, const Ray &r, float tmin, float tmax) {
         //printf("insdie cudaSphere color hit\n");
@@ -70,7 +70,7 @@ public:
         return ret;
     }
 
-    __host__ __device__ AABB aabb() {
+    __host__ __device__ AABB aabb() const {
         vec3 rvec(radius, radius, radius);
         return AABB(origin - rvec, origin + rvec);
     }

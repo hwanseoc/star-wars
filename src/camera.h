@@ -79,7 +79,7 @@ public:
         int32_t num_sub_image_height = (height - 1) / sub_image_height + 1;
 
 
-        dim3 threadsPerBlock(4, 4, 32);
+        dim3 threadsPerBlock(8, 8, 10);
         dim3 numBlocks((sub_image_width - 1) / threadsPerBlock.x + 1, (sub_image_height - 1) / threadsPerBlock.y + 1, (samples - 1) / threadsPerBlock.z + 1);
 
         size_t newStackSize = 16 * 1024; //KB
@@ -111,7 +111,7 @@ public:
 
 
         printf("render_gpu_sub_image\tkernel started\n");
-
+        std::clog << "\rsub block processed: 0 out of " << (num_sub_image_height * num_sub_image_width) << std::flush;
         for (int32_t sub_h = 0; sub_h < num_sub_image_height; ++sub_h) {
             for (int32_t sub_w = 0; sub_w < num_sub_image_width; ++sub_w) {
                 render_kernel_sub_image<<<numBlocks, threadsPerBlock>>>(
@@ -316,6 +316,9 @@ public:
         case OBJ_TYPE_CUDA_SPHERE:
             hit = ((cuda_Sphere *)(bvh_hit.obj))->hit(state, bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
             break;
+        case OBJ_TYPE_CUDA_TRIANGLE:
+            hit = ((cuda_Triangle *)(bvh_hit.obj))->hit(state, bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
+            break;
         default:
             break;
         }
@@ -366,6 +369,9 @@ public:
         {
         case OBJ_TYPE_CUDA_SPHERE:
             hit = ((cuda_Sphere *)(bvh_hit.obj))->hit(state, bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
+            break;
+        case OBJ_TYPE_CUDA_TRIANGLE:
+            hit = ((cuda_Triangle *)(bvh_hit.obj))->hit(state, bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
             break;
         default:
             break;
