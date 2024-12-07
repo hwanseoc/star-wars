@@ -27,7 +27,7 @@ struct cuda_BVHHit {
     bool is_hit;
     float t;
     cuda_Object* obj;
-    int32_t obj_type;
+    int8_t obj_type;
 };
 
 struct ColorHit {
@@ -47,7 +47,7 @@ struct cuda_ColorHit {
     float u; // texture x coord
     float v; // texture y coord
     cuda_Material *mat;
-    int32_t mat_type;
+    int8_t mat_type;
     bool is_front;
 };
 
@@ -116,7 +116,7 @@ public:
 
     virtual cuda_Object *convertToDevice() = 0;
 
-    virtual int32_t type() const {
+    virtual int8_t type() const {
         return OBJ_TYPE_DEFAULT;
     }
 };

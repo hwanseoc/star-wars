@@ -29,7 +29,7 @@ public:
 
     virtual cuda_Material *convertToDevice() = 0;
 
-    virtual int32_t type() const {
+    virtual int8_t type() const {
         return MAT_TYPE_DEFAULT;
     }
 };
@@ -38,7 +38,7 @@ public:
 
 class cuda_Lambertian : public cuda_Material {
     cuda_Texture *texture;
-    int32_t tex_type;
+    int8_t tex_type;
 
 public:
     __host__ cuda_Lambertian(cuda_Texture *texture, int32_t tex_type) : texture(texture), tex_type(tex_type) {}
@@ -113,7 +113,7 @@ public:
         return dev_cuda_lambertian;
     }
 
-    int32_t type() const override {
+    int8_t type() const override {
         return MAT_TYPE_CUDA_LAMBERTIAN;
     }
 };
@@ -172,7 +172,7 @@ public:
 
         return dev_cuda_metal;
     }
-    int32_t type() const override {
+    int8_t type() const override {
         return MAT_TYPE_CUDA_METAL;
     }
     
@@ -264,7 +264,7 @@ public:
         return dev_cuda_dielectric;
     }
 
-    int32_t type() const override {
+    int8_t type() const override {
         return MAT_TYPE_CUDA_DIELECTRIC;
     }
 private:
@@ -288,7 +288,7 @@ private:
 
 class cuda_DiffuseLight : public cuda_Material {
     cuda_Texture *texture;
-    int32_t tex_type;
+    int8_t tex_type;
 
 public:
     __host__ cuda_DiffuseLight(cuda_Texture *texture, int32_t tex_type) : texture(texture), tex_type(tex_type) {}
@@ -344,7 +344,7 @@ public:
         return dev_cuda_diffuselight;
     }
 
-    int32_t type() const override {
+    int8_t type() const override {
         return MAT_TYPE_CUDA_DIFFUSELIGHT;
     }
 };

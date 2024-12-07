@@ -20,7 +20,7 @@ struct cuda_BVHNode {
     AABB aabb;
     int64_t left;
     int64_t right;
-    int32_t obj_type;
+    int8_t obj_type;
     cuda_Object* obj;
 };
 
@@ -42,6 +42,18 @@ public:
         }
     }
 
+    __device__ cuda_BVHNode *getCudaBVHNode() {
+        return nodes;
+    }
+
+    __device__ int32_t getSize() {
+        return node_size;
+    }
+
+    __device__ cuda_BVHHit hit_with_given_cuda_BVHNode(const Ray &r, float tmin, float tmax, cuda_BVHNode *shared_nodes) {
+        return hit_recursive_with_given_BVHNode(r, tmin, tmax, root, shared_nodes);
+    }
+
     __device__ cuda_BVHHit hit(const Ray &r, float tmin, float tmax) {
         return hit_recursive(r, tmin, tmax, root);
     }
@@ -49,6 +61,60 @@ public:
 private:
     __device__ cuda_BVHHit hit_recursive(const Ray &r, float tmin, float tmax, int64_t parent_node) {
         cuda_BVHNode *node = &nodes[parent_node];
+
+        // if not node.hit
+        if (!node->aabb.hit(r, tmin, tmax)) {
+            cuda_BVHHit bvhhit;
+            bvhhit.is_hit = false;
+            bvhhit.t = 0.0f;
+            return bvhhit;
+        }
+
+        if (node->is_leaf) {
+            cuda_Object *object;
+
+            cuda_BVHHit bvhhit;
+            bvhhit.is_hit = false;
+            bvhhit.t = 0.0f;
+            switch (node->obj_type)
+            {
+            case OBJ_TYPE_CUDA_SPHERE:
+                bvhhit = ((cuda_Sphere *)node->obj)->bvh_hit(r, tmin, tmax);
+                break;
+            
+            default:
+                printf("wrong type\n");
+                break;
+            }           
+
+            if (bvhhit.is_hit){
+                bvhhit.obj = node->obj;
+                bvhhit.obj_type = node->obj_type;
+            }
+            return bvhhit;
+        } else {
+            // TODO : make sure hit_right does not have dependency on hit_left,
+            // so that we can parallelize hit_left and hit_right
+            cuda_BVHHit bvhhit_left = hit_recursive(r, tmin, tmax, node->left);
+            if (bvhhit_left.is_hit) {
+                tmax = bvhhit_left.t;
+            }
+            cuda_BVHHit bvhhit_right = hit_recursive(r, tmin, tmax, node->right);
+            if (bvhhit_right.is_hit) {
+                return bvhhit_right;
+            } else if (bvhhit_left.is_hit){
+                return bvhhit_left;
+            }
+
+            cuda_BVHHit bvhhit;
+            bvhhit.is_hit = false;
+            bvhhit.t = 0.0f;
+            return bvhhit;
+        }
+    }
+
+        __device__ cuda_BVHHit hit_recursive_with_given_BVHNode(const Ray &r, float tmin, float tmax, int64_t parent_node, cuda_BVHNode *shared_nodes) {
+        cuda_BVHNode *node = &shared_nodes[parent_node];
 
         // if not node.hit
         if (!node->aabb.hit(r, tmin, tmax)) {
@@ -144,6 +210,10 @@ public:
         }
         if (host_nodes) delete host_nodes;
         if (host_cuda_bvh) delete host_cuda_bvh;
+    }
+
+    int32_t getSize() {
+        return nodes.size();
     }
 private:
     int64_t build_recursive(int64_t start, int64_t end) {

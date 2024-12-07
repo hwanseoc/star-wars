@@ -58,10 +58,10 @@ public:
     }
 
     void render_gpu(std::vector<uint8_t> &image, const World& world) {
-        dim3 threadsPerBlock(16, 16);
+        dim3 threadsPerBlock(16, 32);
         dim3 numBlocks((width - 1) / threadsPerBlock.x + 1, (height - 1) / threadsPerBlock.y + 1);
 
-        size_t newStackSize = 64 * 1024;
+        size_t newStackSize = 16 * 1024; //KB
         cudaDeviceSetLimit(cudaLimitStackSize, newStackSize);
 
         printf("render_gpu\tstarted\n");
@@ -213,6 +213,57 @@ public:
         }
         return color_emitted + attenuation * get_color(state, bvh, ray_scatter, depth - 1);
     }
+
+    __device__ vec3 get_color_with_given_BVHNode(curandState *state, cuda_BVH *bvh, const Ray &r, int32_t depth, cuda_BVHNode *shared_nodes) {
+        if (depth <= 0) {
+            return vec3(0.0, 0.0, 0.0);
+        }
+        cuda_BVHHit bvh_hit = bvh->hit_with_given_cuda_BVHNode(r, 0.001f, std::numeric_limits<float>::max(), shared_nodes);
+        if (!bvh_hit.is_hit) {
+            return vec3(0.0, 0.0, 0.0);
+        }
+
+        cuda_ColorHit hit;
+        switch(bvh_hit.obj_type)
+        {
+        case OBJ_TYPE_CUDA_SPHERE:
+            hit = ((cuda_Sphere *)(bvh_hit.obj))->hit(state, bvh_hit, r, 0.001f, std::numeric_limits<float>::max());
+            break;
+        default:
+            break;
+        }
+        // bool is_scatter, vec3 attenuation, Ray ray_scatter
+        bool is_scatter = false;
+        vec3 attenuation = vec3();
+        Ray ray_scatter = Ray();
+        vec3 color_emitted = vec3();
+        switch (hit.mat_type)
+        {
+        case MAT_TYPE_CUDA_DIELECTRIC:
+            ((cuda_Dielectric *)hit.mat)->scatter(state, r, hit, is_scatter, attenuation, ray_scatter);
+            break;
+        case MAT_TYPE_CUDA_DIFFUSELIGHT:
+            color_emitted = ((cuda_DiffuseLight *)hit.mat)->emitted(hit);
+            break;
+        case MAT_TYPE_CUDA_LAMBERTIAN:
+            ((cuda_Lambertian *)hit.mat)->scatter(state, r, hit, is_scatter, attenuation, ray_scatter);
+            break;
+        case MAT_TYPE_CUDA_METAL:
+            ((cuda_Metal *)hit.mat)->scatter(state, r, hit, is_scatter, attenuation, ray_scatter);
+            break;
+        
+        default:
+            printf("found wrong mat type\n");
+            // hit.mat->scatter(r, hit, is_scatter, attenuation, ray_scatter);
+            // color_emitted = hit.mat->emitted(hit);
+            break;
+        }
+
+        if (!is_scatter) {
+            return color_emitted;
+        }
+        return color_emitted + attenuation * get_color_with_given_BVHNode(state, bvh, ray_scatter, depth - 1, shared_nodes);
+    }
 };
 
 
@@ -221,24 +272,29 @@ __global__  void render_kernel(curandState *state, int32_t x_dim, cuda_BVH *bvh,
     int32_t h = blockIdx.y * blockDim.y + threadIdx.y;
 
     __shared__ cuda_BVH shared_cuda_bvh;
+    __shared__ cuda_BVHNode *shared_nodes;
 
     if (threadIdx.x == 0 && threadIdx.y == 0) {
         shared_cuda_bvh = *bvh;
+        shared_nodes = shared_cuda_bvh.getCudaBVHNode();
     }
 
     __syncthreads();
 
-    if (h < height && w < width) {
-        vec3 pixel(0.0, 0.0, 0.0);
-        for (int32_t s = 0; s < samples; ++s) {
-            Ray r = camera->get_ray(&state[h * x_dim + w], h, w);
-            vec3 sampled = camera->get_color(&state[h * x_dim + w], &shared_cuda_bvh, r, 50);
-            pixel += sampled;
-        }
 
-        pixel /= samples;
+    vec3 pixel(0.0, 0.0, 0.0);
+    for (int32_t s = 0; s < samples; ++s) {
+        Ray r = camera->get_ray(&state[h * x_dim + w], h, w);
+        vec3 sampled = camera->get_color_with_given_BVHNode(&state[h * x_dim + w], &shared_cuda_bvh, r, 50, shared_nodes);
+        pixel += sampled;
+    }
+
+    pixel /= samples;
+
+    if ( w < width && h < height) {
         image[h * width + w] = pixel;
     }
+
     __syncthreads();
 }
 

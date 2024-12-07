@@ -19,7 +19,7 @@ public:
 
     virtual cuda_Texture *convertToDevice() = 0;
 
-    virtual int32_t type() const {
+    virtual int8_t type() const {
         return TEX_TYPE_DEFAULT;
     }
 
@@ -67,7 +67,7 @@ public:
         return dev_cuda_texture;
     }
 
-    int32_t type() const override {
+    int8_t type() const override {
         return TEX_TYPE_SOLIDTEXTURE;
     }
 };
@@ -85,16 +85,16 @@ class cuda_CheckerTexture : public cuda_Texture {
     float inv_scale;
     cuda_Texture *even;
     cuda_Texture *odd;
-    int32_t even_tex_type;
-    int32_t odd_tex_type;
+    int8_t even_tex_type;
+    int8_t odd_tex_type;
 
 public:
     cuda_CheckerTexture(
         float inv_scale,
         cuda_Texture *even,
-        int32_t even_tex_type,
+        int8_t even_tex_type,
         cuda_Texture *odd,
-        int32_t odd_tex_type
+        int8_t odd_tex_type
     ) : inv_scale(inv_scale), even(even), even_tex_type(even_tex_type), odd(odd), odd_tex_type(odd_tex_type) {}
     __host__ ~cuda_CheckerTexture() {
         if (even) {
@@ -183,7 +183,7 @@ public:
         return dev_cuda_texture;
     }
 
-    int32_t type() const override {
+    int8_t type() const override {
         return TEX_TYPE_CHECKERTEXTURE;
     }
 };

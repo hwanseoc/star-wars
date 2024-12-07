@@ -14,7 +14,7 @@ class cuda_Sphere : public cuda_Object {
     vec3 origin;
     float radius;
     cuda_Material *mat;
-    int32_t mat_type;
+    int8_t mat_type;
 
 public:
     __host__ cuda_Sphere(const vec3 &origin, float radius, cuda_Material *mat, int32_t mat_type) : origin(origin), radius(radius), mat(mat), mat_type(mat_type) {}
@@ -109,7 +109,7 @@ public:
         return dev_cuda_obj;
     }
 
-    __host__ int32_t type() const override {
+    __host__ int8_t type() const override {
         return OBJ_TYPE_CUDA_SPHERE;
     }
 };
