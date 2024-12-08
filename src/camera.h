@@ -13,7 +13,6 @@
 #include <material.h>
 
 class PerspectiveCamera;
-__global__  void render_kernel(curandState *states, int32_t x_dim, int32_t z_dim, cuda_BVH *bvh, PerspectiveCamera *camera, int32_t height, int32_t width, int32_t samples, vec3* image);
 __global__  void render_kernel_sub_image(
     curandState *state,
     int32_t x_dim,
@@ -82,7 +81,7 @@ public:
         dim3 threadsPerBlock(8, 8, 10);
         dim3 numBlocks((sub_image_width - 1) / threadsPerBlock.x + 1, (sub_image_height - 1) / threadsPerBlock.y + 1, (samples - 1) / threadsPerBlock.z + 1);
 
-        size_t newStackSize = 16 * 1024; //KB
+        size_t newStackSize = 32 * 1024; //KB
         cudaDeviceSetLimit(cudaLimitStackSize, newStackSize);
 
         printf("render_gpu_sub_image\tstarted\n");
@@ -174,7 +173,6 @@ public:
                         }
                     }
                 }
-                //printf("%d out of %d sub blocks done\n", (sub_h * num_sub_image_width + sub_w) + 1, (num_sub_image_height * num_sub_image_width));
                 std::clog << "\rsub block processed: " << (sub_h * num_sub_image_width + sub_w) + 1 << " out of " << (num_sub_image_height * num_sub_image_width) << std::flush;
             }
         }
@@ -189,99 +187,6 @@ public:
         cudaFree(dev_sub_image);
         free(host_sub_image);
     }
-
-    void render_gpu(std::vector<uint8_t> &image, const World& world) {
-        dim3 threadsPerBlock(2, 2, 16);
-        dim3 numBlocks((width - 1) / threadsPerBlock.x + 1, (height - 1) / threadsPerBlock.y + 1, (samples - 1) / threadsPerBlock.z + 1);
-
-        size_t newStackSize = 16 * 1024; //KB
-        cudaDeviceSetLimit(cudaLimitStackSize, newStackSize);
-
-        printf("render_gpu\tstarted\n");
-        curandState *states;
-        cudaMalloc(&states, sizeof(curandState) * (threadsPerBlock.x * numBlocks.x) * (threadsPerBlock.y * numBlocks.y) * (threadsPerBlock.z * numBlocks.z));
-        
-        initCurandStates<<<numBlocks, threadsPerBlock>>>(states, 1234, (threadsPerBlock.x * numBlocks.x), (threadsPerBlock.z * numBlocks.z));
-        printf("render_gpu\tcurand init\n");
-
-        BVH bvh(world);
-        cuda_BVH *host_cuda_bvh = bvh.convertToDevice();
-        cuda_BVH *dev_cuda_bvh;
-
-        PerspectiveCamera *host_camera = this;
-        PerspectiveCamera *dev_camera;
-
-        cudaMalloc(&dev_camera, sizeof(PerspectiveCamera));
-        cudaMemcpy(dev_camera, host_camera, sizeof(PerspectiveCamera), cudaMemcpyHostToDevice);
-
-        cudaMalloc(&dev_cuda_bvh, sizeof(cuda_BVH));
-        cudaMemcpy(dev_cuda_bvh, host_cuda_bvh, sizeof(cuda_BVH), cudaMemcpyHostToDevice);
-
-        vec3 *host_image = (vec3 *)malloc(sizeof(vec3) * height * width * samples);
-        vec3 *dev_image;
-        cudaMalloc(&dev_image, sizeof(vec3) * height * width * samples);
-
-
-        printf("render_gpu\tkernel started\n");
-        render_kernel<<<numBlocks, threadsPerBlock>>>(states, (threadsPerBlock.x * numBlocks.x), (threadsPerBlock.z * numBlocks.z), dev_cuda_bvh, dev_camera, height, width, samples, dev_image);
-
-        printf("render_gpu\tkernel ended\n");
-
-        cudaDeviceSynchronize();
-        cudaError_t err = cudaGetLastError();
-    	if (err != cudaSuccess) {
-		    printf("CUDA kernel launch failed: %s\n", cudaGetErrorString(err));
-		    return;
-    	}
-
-    	// Ensure kernel has completed before copying data back to host
-    	err = cudaDeviceSynchronize();
-    	if (err != cudaSuccess) {
-		    printf("CUDA synchronize failed: %s\n", cudaGetErrorString(err));
-		    return;
-    	}
-
-
-        cudaMemcpy(host_image, dev_image, sizeof(vec3) * height * width * samples, cudaMemcpyDeviceToHost);
-
-        printf("render_gpu\tprocessing image\n");
-        for (int32_t h = 0; h < height; ++h) {
-            for (int32_t w = 0; w < width; ++w) {
-                vec3 pixel(0.0f, 0.0, 0.0f);
-                for (int32_t s = 0; s < samples; ++s) {
-                    pixel += host_image[(h * width + w) * samples + s];
-                }
-                pixel /= samples;
-                pixel.x = pixel.x > 0.0f ? std::sqrt(pixel.x) : 0.0f;
-                pixel.y = pixel.y > 0.0f ? std::sqrt(pixel.y) : 0.0f;
-                pixel.z = pixel.z > 0.0f ? std::sqrt(pixel.z) : 0.0f;
-
-                // clamp
-                pixel.x = std::clamp(pixel.x, 0.0f, 1.0f);
-                pixel.y = std::clamp(pixel.y, 0.0f, 1.0f);
-                pixel.z = std::clamp(pixel.z, 0.0f, 1.0f);
-
-                uint8_t ir = static_cast<uint8_t>(255.999f * pixel.x);
-                uint8_t ig = static_cast<uint8_t>(255.999f * pixel.y);
-                uint8_t ib = static_cast<uint8_t>(255.999f * pixel.z);
-
-                image[h * width * 4 + w * 4 + 0] = ir;
-                image[h * width * 4 + w * 4 + 1] = ig;
-                image[h * width * 4 + w * 4 + 2] = ib;
-                image[h * width * 4 + w * 4 + 3] = 255;
-            }
-        }
-        printf("render_gpu\tfreeing memory\n");
-        cudaFree(host_cuda_bvh);
-        cudaFree(dev_cuda_bvh);
-
-        cudaFree(dev_image);
-        free(host_image);
-
-        std::cout << std::endl;
-    }
-
-
 
 
     __device__ Ray get_ray(curandState *state, int32_t h, int32_t w) {
@@ -409,33 +314,6 @@ public:
         return color_emitted + attenuation * get_color_with_given_BVHNode(state, bvh, ray_scatter, depth - 1, shared_nodes);
     }
 };
-
-
-__global__  void render_kernel(curandState *state, int32_t x_dim, int32_t z_dim, cuda_BVH *bvh, PerspectiveCamera *camera, int32_t height, int32_t width, int32_t samples, vec3* image) {
-    int32_t w = blockIdx.x * blockDim.x + threadIdx.x;
-    int32_t h = blockIdx.y * blockDim.y + threadIdx.y;
-    int32_t s = blockIdx.z * blockDim.z + threadIdx.z;
-
-    __shared__ cuda_BVH shared_cuda_bvh;
-    __shared__ cuda_BVHNode *shared_nodes;
-
-    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
-        shared_cuda_bvh = *bvh;
-        shared_nodes = shared_cuda_bvh.getCudaBVHNode();
-    }
-
-    __syncthreads();
-
-    Ray r = camera->get_ray(&state[(h * x_dim + w) * z_dim + s], h, w);
-    vec3 pixel = camera->get_color_with_given_BVHNode(&state[(h * x_dim + w) * z_dim + s], &shared_cuda_bvh, r, 50, shared_nodes);
-
-    if ( w < width && h < height && s < samples) {
-        image[(h * width + w) * samples + s] = pixel;
-    }
-
-    __syncthreads();
-}
-
 
 __global__  void render_kernel_sub_image(
     curandState *state,

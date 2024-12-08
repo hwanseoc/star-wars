@@ -119,7 +119,7 @@ void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, 
     world.add(sphere2);
     world.add(sphere3);
 
-    add_object(world, "data/dragon.obj", glm::vec3(4.0, 1.0, 3.0), glm::vec3(0.0, 1.0, 0.0), 180.0f, glm::vec3(0.3, 0.3, 0.3), material1);
+    // add_object(world, "data/dragon.obj", glm::vec3(4.0, 1.0, 3.0), glm::vec3(0.0, 1.0, 0.0), 180.0f, glm::vec3(0.3, 0.3, 0.3), material1);
 
     for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
         for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
@@ -225,13 +225,12 @@ int32_t main(int32_t argc, char *argv[]) {
     std::string filename = ss.str();
 
     // image resolution
-    // int32_t width = 2560;
-    // int32_t height = 1440;
-    int32_t width = 1280;
-    int32_t height = 720;
+    int32_t width = 2560;
+    int32_t height = 1440;
+    // int32_t width = 1280;
+    // int32_t height = 720;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
-    // materials
     World world;
     PerspectiveCamera perspectiveCamera;
 
@@ -240,7 +239,7 @@ int32_t main(int32_t argc, char *argv[]) {
     // render
     perspectiveCamera.render_gpu_with_sub_image(image, world);
 
-
+    // print image
     ppm(image, height, width);
 
     auto finish = std::chrono::high_resolution_clock::now();

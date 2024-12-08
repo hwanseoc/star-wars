@@ -7,7 +7,6 @@
 #include <sphere.h>
 #include <triangle.h>
 
-
 struct BVHNode {
     bool is_leaf;
     AABB aabb;
@@ -49,6 +48,10 @@ public:
 
     __device__ int32_t getSize() {
         return node_size;
+    }
+
+    __device__ int64_t getRoot() {
+        return root;
     }
 
     __device__ cuda_BVHHit hit_with_given_cuda_BVHNode(const Ray &r, float tmin, float tmax, cuda_BVHNode *shared_nodes) {
@@ -119,7 +122,6 @@ private:
     __device__ cuda_BVHHit hit_recursive_with_given_BVHNode(const Ray &r, float tmin, float tmax, int64_t parent_node, cuda_BVHNode *shared_nodes) {
         cuda_BVHNode *node = &shared_nodes[parent_node];
 
-        // if not node.hit
         if (!node->aabb.hit(r, tmin, tmax)) {
             cuda_BVHHit bvhhit;
             bvhhit.is_hit = false;
@@ -185,26 +187,18 @@ public:
     BVH() {}
     BVH(const World &w) {
         const std::vector<std::shared_ptr<Object>> &objects = w.get_objects();
-        //printf("inside bvh constrcutor\n");
         for (int32_t i = 0; i < objects.size(); ++i) {
             std::shared_ptr<Object> obj = objects[i];
-            //printf("[%d]: %p\n", i, obj.get());
             std::shared_ptr<Object> obj_copy = obj;
             struct BVHNode node = {
                 .is_leaf = true,
                 .aabb = obj->aabb(),
                 .obj = obj
             };
-            //printf("[%d]: %p\n", i, node.obj.get());
             nodes.push_back(node);
         }
 
         root = build_recursive(0, objects.size());
-
-        //printf("before end\n");
-        for(int32_t i = 0; i < nodes.size(); ++i) {
-            //printf("[%d]:[%d] %p\n", i, (int)(nodes[i].is_leaf), nodes[i].obj.get());
-        }
     }
 
     ~BVH() {
@@ -219,6 +213,10 @@ public:
 
     int32_t getSize() {
         return nodes.size();
+    }
+
+    const std::vector<BVHNode> &getNodes() {
+        return nodes;
     }
 private:
     int64_t build_recursive(int64_t start, int64_t end) {
@@ -285,7 +283,6 @@ public:
                     .obj = (cuda_Object *)(nodes[i].obj->convertToDevice())
                 };
             } else {
-                //printf("inside else\n");
                 host_nodes[i] = {
                     .is_leaf = false,
                     .aabb = nodes[i].aabb,
@@ -294,7 +291,6 @@ public:
                 };
             }
         }
-        //printf("after copy\n");
 
         cudaMemcpy(dev_nodes, host_nodes, sizeof(cuda_BVHNode) * num_nodes, cudaMemcpyHostToDevice);
 
