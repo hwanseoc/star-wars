@@ -116,7 +116,7 @@ private:
         }
     }
 
-        __device__ cuda_BVHHit hit_recursive_with_given_BVHNode(const Ray &r, float tmin, float tmax, int64_t parent_node, cuda_BVHNode *shared_nodes) {
+    __device__ cuda_BVHHit hit_recursive_with_given_BVHNode(const Ray &r, float tmin, float tmax, int64_t parent_node, cuda_BVHNode *shared_nodes) {
         cuda_BVHNode *node = &shared_nodes[parent_node];
 
         // if not node.hit
@@ -154,11 +154,11 @@ private:
         } else {
             // TODO : make sure hit_right does not have dependency on hit_left,
             // so that we can parallelize hit_left and hit_right
-            cuda_BVHHit bvhhit_left = hit_recursive(r, tmin, tmax, node->left);
+            cuda_BVHHit bvhhit_left = hit_recursive_with_given_BVHNode(r, tmin, tmax, node->left, shared_nodes);
             if (bvhhit_left.is_hit) {
                 tmax = bvhhit_left.t;
             }
-            cuda_BVHHit bvhhit_right = hit_recursive(r, tmin, tmax, node->right);
+            cuda_BVHHit bvhhit_right = hit_recursive_with_given_BVHNode(r, tmin, tmax, node->right, shared_nodes);
             if (bvhhit_right.is_hit) {
                 return bvhhit_right;
             } else if (bvhhit_left.is_hit){
