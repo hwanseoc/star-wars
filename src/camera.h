@@ -69,6 +69,10 @@ public:
                     - dv * (heightf / 2.0f);
     }
 
+    __device__ int32_t getMaxDepth() {
+        return max_depth;
+    }
+
 
     void render_gpu_with_sub_image(std::vector<uint8_t> &image, const World& world) {
         int32_t sub_image_width = 256;
@@ -343,7 +347,7 @@ __global__  void render_kernel_sub_image(
     __syncthreads();
 
     Ray r = camera->get_ray(&state[(h * x_dim + w) * z_dim + s], h + h_start_from, w + w_start_from);
-    vec3 pixel = camera->get_color_with_given_BVHNode(&state[(h * x_dim + w) * z_dim + s], &shared_cuda_bvh, r, 50, shared_nodes);
+    vec3 pixel = camera->get_color_with_given_BVHNode(&state[(h * x_dim + w) * z_dim + s], &shared_cuda_bvh, r, camera->getMaxDepth(), shared_nodes);
 
     if ( w < sub_width && h < sub_height && s < samples) {
         sub_image[(h * sub_width + w) * samples + s] = pixel;

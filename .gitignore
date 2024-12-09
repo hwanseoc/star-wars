@@ -4,4 +4,4 @@ lodepng/
 glm/
 output.txt
 output.ppm
-main
+cuda_main

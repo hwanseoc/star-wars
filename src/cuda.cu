@@ -81,7 +81,7 @@ void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, 
     vec3 up(0.0, 1.0, 0.0);
     //float fov = 80.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
     float fov = 0.607537f;
-    int32_t samples = 50;
+    int32_t samples = 100;
     int32_t max_depth = 25;
     float focal_distance = 10.0f;
     float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
@@ -119,7 +119,7 @@ void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, 
     world.add(sphere2);
     world.add(sphere3);
 
-    // add_object(world, "data/dragon.obj", glm::vec3(4.0, 1.0, 3.0), glm::vec3(0.0, 1.0, 0.0), 180.0f, glm::vec3(0.3, 0.3, 0.3), material1);
+    add_object(world, "data/dragon.obj", glm::vec3(4.0, 1.0, 3.0), glm::vec3(0.0, 1.0, 0.0), 180.0f, glm::vec3(0.3, 0.3, 0.3), material1);
 
     for (float a = -11.0f; a < 11.0f; a = a + 1.0f) {
         for (float b = -11.0f; b < 11.0f; b = b + 1.0f) {
@@ -151,54 +151,6 @@ void scene1(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, 
 
 }
 
-// void scene2(World &world, PerspectiveCamera &perspectiveCamera, int32_t height, int32_t width){
-//     // Camera
-//     vec3 center(0.0, 0.0, 10.0);
-//     vec3 direction(0.0, 0.0, -10.0);
-//     direction = glm::normalize(direction);
-//     vec3 up(0.0, 1.0, 0.0);
-//     float fov = 100.00f / 360.0f * 2.0f * std::numbers::pi_v<float>;
-//     // float fov = 0.607537f;
-//     int32_t samples = 1000;
-//     int32_t max_depth = 50;
-//     float focal_distance = 10.0f;
-//     float defocus_angle = 0.6f / 180.0f * std::numbers::pi_v<float>;
-
-//     perspectiveCamera.setCamera(
-//         center,
-//         direction,
-//         up,
-//         height,
-//         width,
-//         fov,
-//         focal_distance,
-//         defocus_angle,
-//         samples,
-//         max_depth
-//     );
-
-//     // World
-
-//     std::shared_ptr<Material> material_left_wall = std::make_shared<Lambertian>(vec3(0.0, 0.8, 0.0)); // g
-//     std::shared_ptr<Material> material_right_wall = std::make_shared<Lambertian>(vec3(0.8, 0.0, 0.0)); // r
-//     std::shared_ptr<Material> material_wall = std::make_shared<Lambertian>(vec3(1.0, 1.0, 1.0));
-
-//     std::shared_ptr<Material> material_light = std::make_shared<DiffuseLight>(vec3(7.0, 7.0, 7.0));
-
-//     std::shared_ptr<Material> material_glass = std::make_shared<Dielectric>(1.5f);
-
-//     add_object(world, "data/plate.obj", vec3(0.0, -5.0, 0.0), vec3(0.0, 0.0, 1.0), 0.0f, vec3(10.0, 10.0, 10.0), material_wall); // down
-//     add_object(world, "data/plate.obj", vec3(0.0, 5.0, 0.0), vec3(0.0, 0.0, 1.0), 180.0f, vec3(10.0, 10.0, 10.0), material_wall); // up
-//     add_object(world, "data/plate.obj", vec3(5.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), 90.0f, vec3(10.0, 10.0, 10.0), material_left_wall); // left
-//     add_object(world, "data/plate.obj", vec3(-5.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), 270.0f, vec3(10.0, 10.0, 10.0), material_right_wall); // right
-//     add_object(world, "data/plate.obj", vec3(0.0, 0.0, -5.0), vec3(1.0, 0.0, 0.0), 90.0f, vec3(10.0, 10.0, 10.0), material_wall); // back
-
-//     add_object(world, "data/plate.obj", vec3(0.0, 5.0, 0.0), vec3(0.0, 0.0, 1.0), 180.0f, vec3(3.0, 3.0, 3.0), material_light); // up
-
-//     add_object(world, "data/dragon.obj", vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 90.0f, vec3(2.5, 2.5, 2.5), material_glass);
-
-// }
-
 void ppm(const std::vector<uint8_t> &image, int32_t height, int32_t width) {
     std::ofstream writeFile("output.ppm");
     if (writeFile.is_open()) {
@@ -225,10 +177,8 @@ int32_t main(int32_t argc, char *argv[]) {
     std::string filename = ss.str();
 
     // image resolution
-    int32_t width = 2560;
-    int32_t height = 1440;
-    // int32_t width = 1280;
-    // int32_t height = 720;
+    int32_t width = 2560/4;
+    int32_t height = 1440/4;
     std::vector<uint8_t> image(height * width * 4); // rgba
 
     World world;
